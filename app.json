@@ -49,7 +49,8 @@
         {
           "locationWhenInUsePermission": "Usamos tu ubicación para mostrarte el mapa de tu ciudad."
         }
-      ]
+      ],
+      "@react-native-vector-icons/ionicons"
     ],
     "experiments": {
       "typedRoutes": true,
