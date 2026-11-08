@@ -26,6 +26,34 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
+// Paleta de Cuenta: no cambia los colores que usan las demás pantallas.
+export const AccountColors = {
+  light: {
+    primary: '#176B7A',
+    background: '#FAFAF7',
+    secondary: '#C9E4D7',
+    detail: '#E8D5B8',
+    text: '#24343B',
+    error: '#A33333',
+    errorBackground: '#FBE8E5',
+    onPrimary: '#FAFAF7',
+    logoBody: '#015D7D', // Azul original de las ondas del SVG.
+    logoWaves: '#FFFFFF',
+  },
+  dark: {
+    primary: '#8CC8CC',
+    background: '#15262D',
+    secondary: '#29434A',
+    detail: '#514638',
+    text: '#F2F6F3',
+    error: '#FFB4A9',
+    errorBackground: '#492B32',
+    onPrimary: '#15262D',
+    logoBody: '#8CC8CC',
+    logoWaves: '#15262D',
+  },
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
