@@ -1,9 +1,16 @@
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { Tabs } from "expo-router";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function TabsLayout() {
+  const colores = useTheme();
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: "#0B5394" }}>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colores.primary,
+        headerShadowVisible: false,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
