@@ -11,7 +11,7 @@ import {
 import { ThemedText } from "@/components/themed-text";
 import { ErrorSesionSegura, useSesion } from "@/contextos/sesion";
 import { CuentaVerificacion } from "@/components/cuenta-verificacion";
-import { useAccountTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/hooks/use-theme";
 import {
   registrar,
   validarRegistro,
@@ -20,7 +20,7 @@ import {
 } from "@/servicios/cuenta";
 
 export default function RegistroScreen() {
-  const colores = useAccountTheme();
+  const colores = useTheme();
   const { sesion, iniciarSesion, restaurando, errorRestauracion } = useSesion();
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -77,7 +77,7 @@ export default function RegistroScreen() {
       <ThemedText
         role="heading"
         style={{
-          color: colores.text,
+          color: colores.textContent,
           fontSize: 26,
           lineHeight: 34,
           fontWeight: "600",
@@ -136,7 +136,7 @@ export default function RegistroScreen() {
         returnKeyType="go"
         onSubmitEditing={enviar}
       />
-      <ThemedText style={{ color: colores.text }}>
+      <ThemedText style={{ color: colores.textContent }}>
         La contraseña debe tener entre 8 y 200 caracteres.
       </ThemedText>
       <CuentaError mensaje={error} />

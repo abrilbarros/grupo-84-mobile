@@ -11,11 +11,11 @@ import {
 import { ThemedText } from "@/components/themed-text";
 import { Spacing } from "@/constants/theme";
 import { ErrorSesionSegura, useSesion } from "@/contextos/sesion";
-import { useAccountTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/hooks/use-theme";
 import { CuentaVerificacion } from "@/components/cuenta-verificacion";
 
 export default function PerfilScreen() {
-  const colores = useAccountTheme();
+  const colores = useTheme();
   const {
     sesion,
     cerrarSesion,
@@ -75,68 +75,96 @@ export default function PerfilScreen() {
   return (
     <CuentaContenedor conEncabezado>
       {sesion ? (
-        <>
+        <View style={styles.cuenta}>
           <View
             style={[styles.tarjeta, { backgroundColor: colores.secondary }]}
           >
-            <View style={styles.nombre}>
-              <Ionicons
-                name="person-circle-outline"
-                size={26}
-                color={colores.primary}
-                accessible={false}
-              />
+            <Ionicons
+              name="person-circle-outline"
+              size={40}
+              color={colores.primary}
+              accessible={false}
+            />
+            <View style={styles.datosUsuario}>
               <ThemedText
                 style={{
-                  color: colores.text,
+                  color: colores.textContent,
                   fontWeight: "700",
                   fontSize: 20,
                   lineHeight: 28,
-                  flex: 1,
                 }}
               >
                 {sesion.usuario.nombre}
               </ThemedText>
+              <ThemedText
+                style={{ color: colores.textContent, fontWeight: "400" }}
+              >
+                {sesion.usuario.email}
+              </ThemedText>
             </View>
-            <ThemedText style={{ color: colores.text, fontWeight: "400" }}>
-              {sesion.usuario.email}
-            </ThemedText>
           </View>
-          <CuentaBoton
-            titulo={
-              biometriaActiva
-                ? "Desactivar ingreso biométrico"
-                : "Activar ingreso biométrico"
-            }
-            icono="finger-print-outline"
-            secundario
-            cargando={activando}
-            textoCarga="Verificando…"
-            onPress={biometriaActiva ? confirmarDesactivacion : activar}
-          />
+          <View
+            style={[styles.opciones, { backgroundColor: colores.secondary }]}
+          >
+            <CuentaBoton
+              titulo="Mis favoritos"
+              icono="heart-outline"
+              secundario
+              tamanoIcono={22}
+              alineadoIzquierda
+              style={styles.filaOpcion}
+              onPress={() => router.push("/favoritos")}
+            />
+            <View
+              style={[styles.separador, { backgroundColor: colores.primary }]}
+            />
+            <CuentaBoton
+              titulo={
+                biometriaActiva
+                  ? "Desactivar ingreso biométrico"
+                  : "Activar ingreso biométrico"
+              }
+              icono="finger-print-outline"
+              secundario
+              tamanoIcono={22}
+              alineadoIzquierda
+              style={styles.filaOpcion}
+              cargando={activando}
+              textoCarga="Verificando…"
+              onPress={biometriaActiva ? confirmarDesactivacion : activar}
+            />
+          </View>
           <CuentaError mensaje={errorBiometria} />
-          <CuentaBoton
-            titulo="Cerrar sesión"
-            cargando={cerrando}
-            textoCarga="Cerrando sesión…"
-            icono="log-out-outline"
-            tamanoTexto={18}
-            tamanoIcono={22}
-            secundario
-            onPress={confirmarCierre}
-          />
-        </>
+          <View
+            style={[styles.opciones, { backgroundColor: colores.secondary }]}
+          >
+            <CuentaBoton
+              titulo="Cerrar sesión"
+              cargando={cerrando}
+              textoCarga="Cerrando sesión…"
+              icono="log-out-outline"
+              tamanoTexto={18}
+              tamanoIcono={22}
+              secundario
+              alineadoIzquierda
+              style={styles.filaOpcion}
+              onPress={confirmarCierre}
+            />
+          </View>
+        </View>
       ) : (
         <>
           <View style={styles.presentacion}>
             <CuentaLogo />
             <ThemedText
               role="heading"
-              style={[styles.subtitulo, { color: colores.text }]}
+              style={[styles.subtitulo, { color: colores.textContent }]}
             >
               Mi cuenta
             </ThemedText>
-            <ThemedText style={{ color: colores.text, textAlign: "center" }}>
+            <ThemedText
+              style={{ color: colores.textContent, textAlign: "center" }}
+            >
               Explorá Colón sin iniciar sesión. Creá una cuenta para guardar tus
               favoritos y conservar tu recorrido.
             </ThemedText>
@@ -169,9 +197,19 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.three,
   },
-  nombre: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
+  cuenta: { gap: Spacing.three },
+  datosUsuario: { flex: 1, minWidth: 0, gap: Spacing.one },
+  opciones: { borderRadius: 18, padding: Spacing.one },
+  filaOpcion: { backgroundColor: "transparent" },
+  separador: {
+    height: StyleSheet.hairlineWidth,
+    opacity: 0.3,
+    marginHorizontal: Spacing.three,
+  },
   tarjeta: {
-    padding: Spacing.four,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.three,
     borderRadius: 18,
     gap: Spacing.three,
   },

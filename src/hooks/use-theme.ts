@@ -3,7 +3,7 @@
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { AccountColors, Colors } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function useTheme() {
@@ -11,9 +11,4 @@ export function useTheme() {
   const theme = scheme === 'unspecified' ? 'light' : scheme;
 
   return Colors[theme];
-}
-
-export function useAccountTheme() {
-  const scheme = useColorScheme();
-  return AccountColors[scheme === 'dark' ? 'dark' : 'light'];
 }

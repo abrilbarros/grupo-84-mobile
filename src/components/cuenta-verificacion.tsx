@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { router } from "expo-router";
-import { ActivityIndicator, Alert } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { Spacing } from "@/constants/theme";
 import {
   CuentaBoton,
   CuentaContenedor,
@@ -8,7 +9,7 @@ import {
 } from "@/components/cuenta-ui";
 import { ThemedText } from "@/components/themed-text";
 import { useSesion } from "@/contextos/sesion";
-import { useAccountTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/hooks/use-theme";
 
 // Sólo bloquea Cuenta mientras se valida el token; las pestañas públicas siguen disponibles.
 export function CuentaVerificacion({
@@ -18,67 +19,67 @@ export function CuentaVerificacion({
 }) {
   const { restaurando, errorRestauracion, restaurarSesion, cerrarSesion } =
     useSesion();
-  const colores = useAccountTheme();
-  const [cerrando, setCerrando] = useState(false);
+  const colores = useTheme();
+  const [accionPendiente, setAccionPendiente] = useState<
+    "contrasena" | "salir" | null
+  >(null);
+  const cierreEnCurso = useRef(false);
   async function salir(conContrasena = false) {
-    setCerrando(true);
+    if (cierreEnCurso.current) return;
+    cierreEnCurso.current = true;
+    setAccionPendiente(conContrasena ? "contrasena" : "salir");
     try {
       await cerrarSesion();
       if (conContrasena) router.replace("/login");
     } catch {
       /* El contexto muestra el error y permite reintentar. */
     } finally {
-      setCerrando(false);
+      cierreEnCurso.current = false;
+      setAccionPendiente(null);
     }
   }
   return (
     <CuentaContenedor conEncabezado={conEncabezado}>
       {restaurando ? (
-        <>
+        <View style={styles.grupo}>
           <ActivityIndicator color={colores.primary} />
           <ThemedText
             accessibilityLiveRegion="polite"
-            style={{ color: colores.text }}
+            style={{ color: colores.textContent }}
           >
             Verificando sesión…
           </ThemedText>
-        </>
+        </View>
       ) : (
-        <>
+        <View style={styles.grupo}>
           <CuentaError mensaje={errorRestauracion ?? undefined} />
           <CuentaBoton
             titulo="Reintentar"
+            icono="finger-print-outline"
+            tamanoIcono={22}
+            deshabilitado={accionPendiente !== null}
             onPress={() => {
-              void restaurarSesion();
+              if (!cierreEnCurso.current) void restaurarSesion();
             }}
           />
           <CuentaBoton
             titulo="Ingresar con contraseña"
+            icono="lock-closed-outline"
+            tamanoIcono={22}
             secundario
-            cargando={cerrando}
+            cargando={accionPendiente === "contrasena"}
+            deshabilitado={accionPendiente !== null}
             textoCarga="Cerrando sesión…"
             onPress={() => {
               void salir(true);
             }}
           />
-          <CuentaBoton
-            titulo="Cerrar sesión"
-            secundario
-            cargando={cerrando}
-            textoCarga="Cerrando sesión…"
-            onPress={() =>
-              Alert.alert(
-                "Cerrar sesión",
-                "¿Seguro que querés cerrar sesión?",
-                [
-                  { text: "Cancelar", style: "cancel" },
-                  { text: "Cerrar sesión", onPress: () => salir() },
-                ],
-              )
-            }
-          />
-        </>
+        </View>
       )}
     </CuentaContenedor>
   );
 }
+
+const styles = StyleSheet.create({
+  grupo: { gap: Spacing.two },
+});
