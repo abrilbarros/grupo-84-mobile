@@ -1,10 +1,11 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/hooks/use-theme";
+import { estaGuardado, guardarEvento, quitarEvento } from "@/servicios/avisos";
 import { obtenerEvento } from "@/servicios/eventos";
 import type { Evento } from "@/tipos/evento";
 
@@ -32,12 +33,33 @@ export default function DetalleEventoScreen() {
 
   const [evento, setEvento] = useState<Evento | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [guardado, setGuardado] = useState(false);
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   useEffect(() => {
     obtenerEvento(id)
       .then((encontrado) => setEvento(encontrado))
       .finally(() => setCargando(false));
+    // Al abrir, revisa si este evento ya estaba guardado.
+    estaGuardado(id).then((resultado) => setGuardado(resultado));
   }, [id]);
+
+  // Se ejecuta al tocar el botón: guarda o quita el evento.
+  async function alTocarGuardar(eventoActual: Evento) {
+    if (guardado) {
+      await quitarEvento(eventoActual.id);
+      setGuardado(false);
+      setMensaje(null);
+      return;
+    }
+    const permitido = await guardarEvento(eventoActual);
+    if (permitido) {
+      setGuardado(true);
+      setMensaje("Te vamos a avisar antes de que empiece.");
+    } else {
+      setMensaje("Activá las notificaciones del celular para recibir el aviso.");
+    }
+  }
 
   return (
     <ThemedView style={styles.contenedor}>
@@ -84,6 +106,20 @@ export default function DetalleEventoScreen() {
 
           <ThemedText type="smallBold">Qué es</ThemedText>
           <ThemedText>{evento.descripcion}</ThemedText>
+
+          {/* Solo se puede guardar si el evento no está cancelado ni terminado (como en la API) */}
+          {(evento.estado === "programado" || evento.estado === "suspendido") && (
+            <Pressable
+              onPress={() => alTocarGuardar(evento)}
+              style={[styles.boton, { backgroundColor: colores.primary }]}
+              accessibilityRole="button"
+            >
+              <ThemedText style={{ color: colores.background }} type="smallBold">
+                {guardado ? "Guardado ✓ (tocá para quitar)" : "Guardar y avisarme"}
+              </ThemedText>
+            </Pressable>
+          )}
+          {mensaje !== null && <ThemedText>{mensaje}</ThemedText>}
         </ScrollView>
       )}
     </ThemedView>
@@ -94,4 +130,5 @@ const styles = StyleSheet.create({
   contenedor: { flex: 1 },
   contenido: { padding: 16, gap: 8 },
   centro: { marginTop: 32, textAlign: "center" },
+  boton: { minHeight: 48, borderRadius: 14, padding: 12, marginTop: 16, alignItems: "center", justifyContent: "center" },
 });
