@@ -1,56 +1,56 @@
-# Welcome to your Expo app 👋
+# Mi Ciudad · Grupo 84
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil de la guía turística de Colón, desarrollada con React Native, Expo y TypeScript. El código de la app está en `src/`; el backend del profesor se obtiene y ejecuta por separado.
 
-## Get started
+## Requisitos
 
-1. Install dependencies
+- Node.js 24 y npm para la app.
+- API `api-mi-ciudad` del profesor y pnpm 10.33.0 mediante Corepack para el backend.
+- Para probar en un teléfono: Expo Go compatible con el SDK 57 del proyecto y la misma Wi-Fi que la computadora.
 
-   ```bash
-   npm install
+## Primera configuración
+
+1. Obtené la API del profesor desde el material de la materia y seguí la [preparación de la API local](docs/API-LOCAL.md#preparar-la-api-por-primera-vez). La guía explica cómo instalar dependencias, configurar SQLite y cargar los datos de demo sin reiniciar una base existente.
+2. En la carpeta de este proyecto, ejecutá en PowerShell:
+
+   ```powershell
+   npm ci
+   Copy-Item .env.example .env.local
    ```
 
-2. Start the app
+   Copiá el archivo de entorno solamente si todavía no tenés `.env.local`.
 
-   ```bash
-   npx expo start
+3. Editá `.env.local` con la IP Wi-Fi de tu computadora (consultala con `ipconfig`):
+
+   ```dotenv
+   EXPO_PUBLIC_API_URL=http://192.168.1.100:3000
    ```
 
-In the output, you'll find options to open the app in a
+   La IP es un ejemplo: reemplazala por la tuya. No agregues `/api` ni `/salud` a la URL base. En un teléfono físico, `localhost` apunta al propio teléfono. `.env.local` está ignorado por Git; las variables `EXPO_PUBLIC_*` son públicas y no deben contener secretos.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Arrancar para trabajar
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Mantené abiertas dos terminales:
 
-## Get a fresh project
+1. **En la carpeta de la API:**
 
-When you're ready, run:
+   ```powershell
+   corepack pnpm dev
+   ```
 
-```bash
-npm run reset-project
-```
+2. Abrí `http://TU_IP_WIFI:3000/salud` en el navegador del teléfono. Debe mostrar `datos.estado` igual a `"ok"`.
+3. **En la carpeta del proyecto móvil:**
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+   ```powershell
+   npm start -- --go --lan
+   ```
 
-### Other setup steps
+   Escaneá el QR con Expo Go. Si cambiás la IP en `.env.local`, reiniciá Expo y recargá la app.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Detené cada proceso con `Ctrl+C`. Para volver a arrancar no hace falta reinstalar dependencias ni recrear la base.
 
-## Learn more
+## Documentación
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [API local: instalación, conexión, endpoints y solución de problemas](docs/API-LOCAL.md).
+- [Swagger de la API](http://localhost:3000/docs) y [contrato OpenAPI](http://localhost:3000/docs-json), disponibles mientras el backend está ejecutándose. Desde el teléfono, reemplazá `localhost` por la IP de la computadora.
+- El README y los archivos `contract/types.ts` y `contract/api.ts` del backend son las referencias originales del profesor.
