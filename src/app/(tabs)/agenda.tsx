@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -12,7 +13,6 @@ import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/hooks/use-theme";
 import { listarEventos } from "@/servicios/eventos";
 import type { Evento } from "@/tipos/evento";
-
 // Convierte una fecha al formato "AAAA-MM-DD" que usa el servicio.
 // No usamos toISOString() porque pasa a hora UTC y de noche cambiaría el día.
 function aTextoFecha(fecha: Date): string {
@@ -105,7 +105,9 @@ export default function AgendaScreen() {
             </ThemedText>
           }
           renderItem={({ item }) => (
-            <View
+            <Pressable
+              onPress={() => router.push({ pathname: "/eventos/[id]", params: { id: item.id } })}
+              accessibilityRole="button"
               style={[
                 styles.tarjeta,
                 { backgroundColor: colores.backgroundElement },
@@ -119,7 +121,7 @@ export default function AgendaScreen() {
               {item.estado !== "programado" && (
                 <ThemedText type="small">Estado: {item.estado}</ThemedText>
               )}
-            </View>
+            </Pressable>
           )}
         />
       )}
