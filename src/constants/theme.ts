@@ -26,7 +26,6 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
-// Paleta de Cuenta: no cambia los colores que usan las demás pantallas.
 export const AccountColors = {
   light: {
     primary: '#176B7A',
@@ -37,8 +36,6 @@ export const AccountColors = {
     error: '#A33333',
     errorBackground: '#FBE8E5',
     onPrimary: '#FAFAF7',
-    logoBody: '#015D7D', // Azul original de las ondas del SVG.
-    logoWaves: '#FFFFFF',
   },
   dark: {
     primary: '#8CC8CC',
@@ -49,8 +46,6 @@ export const AccountColors = {
     error: '#FFB4A9',
     errorBackground: '#492B32',
     onPrimary: '#15262D',
-    logoBody: '#8CC8CC',
-    logoWaves: '#15262D',
   },
 } as const;
 
