@@ -5,18 +5,45 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import {
   CuentaBoton,
   CuentaContenedor,
+  CuentaError,
   CuentaLogo,
 } from "@/components/cuenta-ui";
 import { ThemedText } from "@/components/themed-text";
 import { Spacing } from "@/constants/theme";
-import { useSesion } from "@/contextos/sesion";
+import { ErrorSesionSegura, useSesion } from "@/contextos/sesion";
 import { useAccountTheme } from "@/hooks/use-theme";
 import { CuentaVerificacion } from "@/components/cuenta-verificacion";
 
 export default function PerfilScreen() {
   const colores = useAccountTheme();
-  const { sesion, cerrarSesion, restaurando, errorRestauracion } = useSesion();
+  const {
+    sesion,
+    cerrarSesion,
+    restaurando,
+    errorRestauracion,
+    biometriaActiva,
+    activarBiometria,
+    desactivarBiometria,
+  } = useSesion();
   const [cerrando, setCerrando] = useState(false);
+  const [activando, setActivando] = useState(false);
+  const [errorBiometria, setErrorBiometria] = useState<string>();
+  async function activar() {
+    setActivando(true);
+    setErrorBiometria(undefined);
+    try {
+      if (biometriaActiva) await desactivarBiometria();
+      else await activarBiometria();
+    } catch (error) {
+      setErrorBiometria(
+        error instanceof ErrorSesionSegura
+          ? error.message
+          : "No pudimos activar la biometría. Intentá nuevamente.",
+      );
+    } finally {
+      setActivando(false);
+    }
+  }
   async function salir() {
     setCerrando(true);
     try {
@@ -32,6 +59,16 @@ export default function PerfilScreen() {
       { text: "Cancelar", style: "cancel" },
       { text: "Cerrar sesión", onPress: salir },
     ]);
+  }
+  function confirmarDesactivacion() {
+    Alert.alert(
+      "¿Desactivar la protección biométrica?",
+      "Si desactivás esta opción, podrás volver a abrir la aplicación sin verificar tu huella mientras tengas una sesión guardada. Tu sesión actual seguirá iniciada",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Desactivar", onPress: activar },
+      ],
+    );
   }
   if (restaurando || errorRestauracion)
     return <CuentaVerificacion conEncabezado />;
@@ -65,6 +102,19 @@ export default function PerfilScreen() {
               {sesion.usuario.email}
             </ThemedText>
           </View>
+          <CuentaBoton
+            titulo={
+              biometriaActiva
+                ? "Desactivar ingreso biométrico"
+                : "Activar ingreso biométrico"
+            }
+            icono="finger-print-outline"
+            secundario
+            cargando={activando}
+            textoCarga="Verificando…"
+            onPress={biometriaActiva ? confirmarDesactivacion : activar}
+          />
+          <CuentaError mensaje={errorBiometria} />
           <CuentaBoton
             titulo="Cerrar sesión"
             cargando={cerrando}

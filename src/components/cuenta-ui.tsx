@@ -75,6 +75,13 @@ export function CuentaBoton({
 }) {
   const colores = useAccountTheme();
   const texto = secundario ? colores.primary : colores.onPrimary;
+  const anchoBorde = secundario && !conBorde ? 0 : 1;
+  let fondoNormal: string = colores.primary;
+  if (secundario) {
+    fondoNormal = conBorde ? "transparent" : colores.background;
+  }
+  const fondoPresionado = secundario ? colores.secondary : colores.primary;
+
   return (
     <Pressable
       role="button"
@@ -85,13 +92,9 @@ export function CuentaBoton({
       style={({ pressed }) => [
         styles.boton,
         {
-          backgroundColor: secundario
-            ? pressed
-              ? colores.secondary
-              : conBorde ? "transparent" : colores.background
-            : colores.primary,
+          backgroundColor: pressed ? fondoPresionado : fondoNormal,
           borderColor: colores.primary,
-          borderWidth: secundario && !conBorde ? 0 : 1,
+          borderWidth: anchoBorde,
           transform: [{ scale: pressed ? 0.99 : 1 }],
         },
       ]}

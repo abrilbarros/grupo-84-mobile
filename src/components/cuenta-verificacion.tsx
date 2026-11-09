@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { router } from "expo-router";
 import { ActivityIndicator, Alert } from "react-native";
 import {
   CuentaBoton,
@@ -19,10 +20,11 @@ export function CuentaVerificacion({
     useSesion();
   const colores = useAccountTheme();
   const [cerrando, setCerrando] = useState(false);
-  async function salir() {
+  async function salir(conContrasena = false) {
     setCerrando(true);
     try {
       await cerrarSesion();
+      if (conContrasena) router.replace("/login");
     } catch {
       /* El contexto muestra el error y permite reintentar. */
     } finally {
@@ -51,6 +53,15 @@ export function CuentaVerificacion({
             }}
           />
           <CuentaBoton
+            titulo="Ingresar con contraseña"
+            secundario
+            cargando={cerrando}
+            textoCarga="Cerrando sesión…"
+            onPress={() => {
+              void salir(true);
+            }}
+          />
+          <CuentaBoton
             titulo="Cerrar sesión"
             secundario
             cargando={cerrando}
@@ -61,7 +72,7 @@ export function CuentaVerificacion({
                 "¿Seguro que querés cerrar sesión?",
                 [
                   { text: "Cancelar", style: "cancel" },
-                  { text: "Cerrar sesión", onPress: salir },
+                  { text: "Cerrar sesión", onPress: () => salir() },
                 ],
               )
             }
