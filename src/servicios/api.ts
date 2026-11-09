@@ -37,6 +37,7 @@ export async function solicitar<T>(
     } catch {
       throw new ErrorConexion();
     }
+    if (respuesta.status === 204) return undefined as T;
     // No se exponen cuerpos internos, trazas ni mensajes técnicos al usuario.
     const cuerpo = await respuesta.json();
     if (!respuesta.ok) {
