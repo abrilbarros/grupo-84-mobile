@@ -12,7 +12,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Spacing } from "@/constants/theme";
 import { ErrorSesionSegura, useSesion } from "@/contextos/sesion";
 import { CuentaVerificacion } from "@/components/cuenta-verificacion";
-import { useAccountTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/hooks/use-theme";
 import {
   ingresar,
   mensajeDeIngreso,
@@ -21,7 +21,7 @@ import {
 } from "@/servicios/cuenta";
 
 export default function LoginScreen() {
-  const colores = useAccountTheme();
+  const colores = useTheme();
   const { sesion, iniciarSesion, restaurando, errorRestauracion } = useSesion();
   const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -68,7 +68,7 @@ export default function LoginScreen() {
   const campo = [
     styles.campo,
     {
-      color: colores.text,
+      color: colores.textContent,
       backgroundColor: colores.background,
       borderColor: colores.primary,
     },
@@ -78,12 +78,12 @@ export default function LoginScreen() {
       <CuentaLogo />
       <ThemedText
         role="heading"
-        style={[styles.subtitulo, { color: colores.text }]}
+        style={[styles.subtitulo, { color: colores.textContent }]}
       >
         Iniciar sesión
       </ThemedText>
       <View style={styles.grupo}>
-        <ThemedText nativeID="email-label" style={{ color: colores.text }}>
+        <ThemedText nativeID="email-label" style={{ color: colores.textContent }}>
           Correo electrónico
         </ThemedText>
         <TextInput
@@ -111,7 +111,7 @@ export default function LoginScreen() {
         <CuentaError mensaje={errores.email} />
       </View>
       <View style={styles.grupo}>
-        <ThemedText nativeID="contrasena-label" style={{ color: colores.text }}>
+        <ThemedText nativeID="contrasena-label" style={{ color: colores.textContent }}>
           Contraseña
         </ThemedText>
         <View
@@ -130,7 +130,7 @@ export default function LoginScreen() {
             style={[
               styles.campo,
               styles.entradaContrasena,
-              { color: colores.text },
+              { color: colores.textContent },
             ]}
             value={contrasena}
             onChangeText={(valor) => {

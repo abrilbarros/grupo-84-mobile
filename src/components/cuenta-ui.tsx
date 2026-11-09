@@ -13,6 +13,8 @@ import {
   StyleSheet,
   View,
   TextInput,
+  type StyleProp,
+  type ViewStyle,
   type TextInputProps,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,7 +22,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 export { CuentaLogo } from "@/components/cuenta-logo";
 import { ThemedText } from "@/components/themed-text";
 import { Spacing } from "@/constants/theme";
-import { useAccountTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/hooks/use-theme";
 
 export function CuentaContenedor({
   children,
@@ -29,7 +31,7 @@ export function CuentaContenedor({
   children: ReactNode;
   conEncabezado?: boolean;
 }) {
-  const colores = useAccountTheme();
+  const colores = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <KeyboardAvoidingView
@@ -56,24 +58,30 @@ export function CuentaBoton({
   titulo,
   onPress,
   cargando = false,
+  deshabilitado = false,
   secundario = false,
   conBorde = false,
   icono,
   tamanoTexto = 16,
   tamanoIcono = 20,
   textoCarga = "Ingresando…",
+  alineadoIzquierda = false,
+  style,
 }: {
   titulo: string;
   onPress: () => void;
   cargando?: boolean;
+  deshabilitado?: boolean;
   secundario?: boolean;
   conBorde?: boolean;
   icono?: ComponentProps<typeof Ionicons>["name"];
   tamanoTexto?: number;
   tamanoIcono?: number;
   textoCarga?: string;
+  alineadoIzquierda?: boolean;
+  style?: StyleProp<ViewStyle>;
 }) {
-  const colores = useAccountTheme();
+  const colores = useTheme();
   const texto = secundario ? colores.primary : colores.onPrimary;
   const anchoBorde = secundario && !conBorde ? 0 : 1;
   let fondoNormal: string = colores.primary;
@@ -86,8 +94,11 @@ export function CuentaBoton({
     <Pressable
       role="button"
       accessibilityLabel={titulo}
-      accessibilityState={{ disabled: cargando, busy: cargando }}
-      disabled={cargando}
+      accessibilityState={{
+        disabled: cargando || deshabilitado,
+        busy: cargando,
+      }}
+      disabled={cargando || deshabilitado}
       onPress={onPress}
       style={({ pressed }) => [
         styles.boton,
@@ -97,6 +108,9 @@ export function CuentaBoton({
           borderWidth: anchoBorde,
           transform: [{ scale: pressed ? 0.99 : 1 }],
         },
+        alineadoIzquierda && { justifyContent: "flex-start" },
+        style,
+        pressed && { backgroundColor: fondoPresionado },
       ]}
     >
       {cargando && (
@@ -119,7 +133,7 @@ export function CuentaBoton({
           color: texto,
           fontSize: tamanoTexto,
           fontWeight: secundario ? "500" : "700",
-          textAlign: "center",
+          textAlign: alineadoIzquierda ? "left" : "center",
           flexShrink: 1,
         }}
       >
@@ -141,11 +155,11 @@ export function CuentaCampo({
   esContrasena?: boolean;
   inputRef?: RefObject<TextInput | null>;
 }) {
-  const colores = useAccountTheme();
+  const colores = useTheme();
   const [visible, setVisible] = useState(false);
   return (
     <View style={{ gap: Spacing.two }}>
-      <ThemedText style={{ color: colores.text }}>{etiqueta}</ThemedText>
+      <ThemedText style={{ color: colores.textContent }}>{etiqueta}</ThemedText>
       <View style={[styles.campo, { borderColor: colores.primary }]}>
         <TextInput
           {...props}
@@ -154,7 +168,7 @@ export function CuentaCampo({
           aria-invalid={!!error}
           secureTextEntry={esContrasena && !visible}
           placeholderTextColor={colores.primary}
-          style={[styles.entrada, { color: colores.text }, props.style]}
+          style={[styles.entrada, { color: colores.textContent }, props.style]}
         />
         {esContrasena && (
           <Pressable
@@ -182,7 +196,7 @@ export function CuentaCampo({
 }
 
 export function CuentaError({ mensaje }: { mensaje?: string }) {
-  const colores = useAccountTheme();
+  const colores = useTheme();
   if (!mensaje) return null;
   return (
     <View style={[styles.error, { backgroundColor: colores.errorBackground }]}>
