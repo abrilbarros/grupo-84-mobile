@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { router, Stack } from "expo-router";
 import { Image } from "expo-image";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import {
   CuentaBoton,
@@ -165,6 +165,26 @@ export default function FavoritosScreen() {
     }
   }
 
+  function confirmarQuitar(favorito: Favorito) {
+    const control = consulta.current;
+    if (!control || control.signal.aborted || operacionEnCurso.current) return;
+    Alert.alert(
+      "¿Quitar de favoritos?",
+      "¿Querés quitar este lugar de tus favoritos? Podés volver a agregarlo cuando quieras.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Quitar",
+          style: "destructive",
+          onPress: () => {
+            if (consulta.current === control && !control.signal.aborted)
+              void quitar(favorito);
+          },
+        },
+      ],
+    );
+  }
+
   function recargar() {
     if (consulta.current) void cargar(1, consulta.current);
   }
@@ -291,7 +311,7 @@ export default function FavoritosScreen() {
                         cargando={quitando === favorito.id}
                         textoCarga="Quitando…"
                         onPress={() => {
-                          void quitar(favorito);
+                          confirmarQuitar(favorito);
                         }}
                       />
                     </View>

@@ -77,7 +77,7 @@ export default function PerfilScreen() {
       {sesion ? (
         <View style={styles.cuenta}>
           <View
-            style={[styles.tarjeta, { backgroundColor: colores.secondary }]}
+            style={[styles.tarjeta, { backgroundColor: colores.detail }]}
           >
             <Ionicons
               name="person-circle-outline"
