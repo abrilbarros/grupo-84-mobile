@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Redirect, router } from "expo-router";
-import { Keyboard, TextInput } from "react-native";
+import { Keyboard, TextInput, View } from "react-native";
 import {
   CuentaBoton,
   CuentaCampo,
@@ -9,6 +9,7 @@ import {
   CuentaLogo,
 } from "@/components/cuenta-ui";
 import { ThemedText } from "@/components/themed-text";
+import { Spacing } from "@/constants/theme";
 import { ErrorSesionSegura, useSesion } from "@/contextos/sesion";
 import { CuentaVerificacion } from "@/components/cuenta-verificacion";
 import { useTheme } from "@/hooks/use-theme";
@@ -73,84 +74,91 @@ export default function RegistroScreen() {
   if (sesion) return <Redirect href="/(tabs)/perfil" />;
   return (
     <CuentaContenedor>
-      <CuentaLogo />
-      <ThemedText
-        role="heading"
-        style={{
-          color: colores.textContent,
-          fontSize: 26,
-          lineHeight: 34,
-          fontWeight: "600",
-          textAlign: "center",
-        }}
-      >
-        Crear una cuenta
-      </ThemedText>
-      <CuentaCampo
-        etiqueta="Nombre"
-        value={nombre}
-        error={errores.nombre}
-        editable={!cargando}
-        onChangeText={(valor) => {
-          setNombre(valor);
-          limpiarError("nombre");
-        }}
-        autoComplete="name"
-        autoCapitalize="words"
-        returnKeyType="next"
-        submitBehavior="submit"
-        onSubmitEditing={() => campoEmail.current?.focus()}
-      />
-      <CuentaCampo
-        etiqueta="Correo electrónico"
-        value={email}
-        error={errores.email}
-        editable={!cargando}
-        inputRef={campoEmail}
-        onChangeText={(valor) => {
-          setEmail(valor);
-          limpiarError("email");
-        }}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-        autoComplete="email"
-        returnKeyType="next"
-        submitBehavior="submit"
-        onSubmitEditing={() => campoContrasena.current?.focus()}
-      />
-      <CuentaCampo
-        etiqueta="Contraseña"
-        value={contrasena}
-        error={errores.contrasena}
-        editable={!cargando}
-        inputRef={campoContrasena}
-        onChangeText={(valor) => {
-          setContrasena(valor);
-          limpiarError("contrasena");
-        }}
-        esContrasena
-        autoComplete="new-password"
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="go"
-        onSubmitEditing={enviar}
-      />
-      <ThemedText style={{ color: colores.textContent }}>
-        La contraseña debe tener entre 8 y 200 caracteres.
-      </ThemedText>
-      <CuentaError mensaje={error} />
-      <CuentaBoton
-        titulo="Crear cuenta"
-        onPress={enviar}
-        cargando={cargando}
-        textoCarga="Creando cuenta…"
-      />
-      <CuentaBoton
-        titulo="Ya tengo cuenta. Iniciar sesión"
-        secundario
-        onPress={() => router.replace("/login")}
-      />
+      <View style={{ gap: Spacing.three }}>
+        <CuentaLogo />
+        <ThemedText
+          role="heading"
+          style={{
+            color: colores.textContent,
+            fontSize: 26,
+            lineHeight: 34,
+            fontWeight: "600",
+            textAlign: "center",
+          }}
+        >
+          Crear una cuenta
+        </ThemedText>
+        <CuentaCampo
+          etiqueta="Nombre"
+          placeholder="Ingresá tu nombre"
+          value={nombre}
+          error={errores.nombre}
+          editable={!cargando}
+          onChangeText={(valor) => {
+            setNombre(valor);
+            limpiarError("nombre");
+          }}
+          autoComplete="name"
+          autoCapitalize="words"
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => campoEmail.current?.focus()}
+        />
+        <CuentaCampo
+          etiqueta="Correo electrónico"
+          placeholder="Ingresá tu correo"
+          value={email}
+          error={errores.email}
+          editable={!cargando}
+          inputRef={campoEmail}
+          onChangeText={(valor) => {
+            setEmail(valor);
+            limpiarError("email");
+          }}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => campoContrasena.current?.focus()}
+        />
+        <View style={{ gap: Spacing.two }}>
+          <CuentaCampo
+            etiqueta="Contraseña"
+            placeholder="Creá una contraseña"
+            value={contrasena}
+            error={errores.contrasena}
+            editable={!cargando}
+            inputRef={campoContrasena}
+            onChangeText={(valor) => {
+              setContrasena(valor);
+              limpiarError("contrasena");
+            }}
+            esContrasena
+            autoComplete="new-password"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            onSubmitEditing={enviar}
+          />
+          <ThemedText type="small" themeColor="textSecondary">
+          Usá al menos 8 caracteres
+          </ThemedText>
+        </View>
+        <CuentaError mensaje={error} />
+        <CuentaBoton
+          titulo="Crear cuenta"
+          onPress={enviar}
+          cargando={cargando}
+          textoCarga="Creando cuenta…"
+        />
+        <CuentaBoton
+          titulo="Ya tengo cuenta. Iniciar sesión"
+          secundario
+          onPress={() => router.replace("/login")}
+        />
+      </View>
     </CuentaContenedor>
   );
 }
