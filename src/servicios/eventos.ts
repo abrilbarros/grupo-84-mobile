@@ -1,18 +1,27 @@
-import { eventosMock } from "@/mocks/eventos";
+import type { RespuestaLista, RespuestaUno } from "@/tipos/api";
 import type { Evento } from "@/tipos/evento";
+import { ErrorApi, solicitar } from "./api";
 
-// Las pantallas llaman a estas funciones, no al mock.
-// Hoy buscan en el mock; cuando conectemos la API, solo cambia este archivo.
+// Las pantallas llaman a estas funciones. Antes leían el mock; ahora piden los datos a la API.
 
-// Devuelve los eventos de un día. fecha = "AAAA-MM-DD", como pide la API (GET /eventos?fecha=).
-// Es async desde ahora porque la API va a tardar en responder.
+// Devuelve los eventos de un día. fecha = "AAAA-MM-DD".
+// porPagina=100 es el máximo de la API: así viene el día completo.
 export async function listarEventos(fecha: string): Promise<Evento[]> {
-  return eventosMock
-    .filter((evento) => evento.inicio.startsWith(fecha))
-    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+  const respuesta = await solicitar<RespuestaLista<Evento>>(
+    `/eventos?fecha=${fecha}&porPagina=100`,
+  );
+  return respuesta.datos;
 }
 
-// Devuelve un evento por su id, o null si no existe (para la pantalla de detalle).
+// Devuelve un evento por su id, o null si la API responde 404 (no existe).
 export async function obtenerEvento(id: string): Promise<Evento | null> {
-  return eventosMock.find((evento) => evento.id === id) ?? null;
+  try {
+    const respuesta = await solicitar<RespuestaUno<Evento>>(
+      `/eventos/${encodeURIComponent(id)}`,
+    );
+    return respuesta.datos;
+  } catch (error) {
+    if (error instanceof ErrorApi && error.estado === 404) return null;
+    throw error;
+  }
 }
