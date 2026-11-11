@@ -1,7 +1,14 @@
 import Ionicons from "@react-native-vector-icons/ionicons";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 
 import { EtiquetaEstado } from "@/components/etiqueta-estado";
 import { ThemedText } from "@/components/themed-text";
@@ -18,6 +25,21 @@ function aTextoFecha(fecha: Date): string {
   const mes = String(fecha.getMonth() + 1).padStart(2, "0");
   const dia = String(fecha.getDate()).padStart(2, "0");
   return `${anio}-${mes}-${dia}`;
+}
+
+// Texto de la hora de la tarjeta. Si el evento empezó otro día
+// (por ej. ayer a la noche y sigue después de medianoche), lo aclara.
+function textoHora(inicio: string, fecha: string): string {
+  const hora = inicio.slice(11, 16);
+  if (inicio.startsWith(fecha)) return hora;
+  return `Desde el ${inicio.slice(8, 10)}/${inicio.slice(5, 7)}, ${hora}`;
+}
+
+// Texto del precio: 0 es gratis; null es que no se sabe (no se muestra nada).
+function textoPrecio(precio: number | null): string | null {
+  if (precio === null) return null;
+  if (precio === 0) return "Gratis";
+  return `$ ${precio.toLocaleString("es-AR")}`;
 }
 
 export default function AgendaScreen() {
@@ -41,7 +63,14 @@ export default function AgendaScreen() {
 
   // Suma o resta días (cantidad = 1 o -1).
   function cambiarDia(cantidad: number) {
-    setDia((actual) => new Date(actual.getFullYear(), actual.getMonth(), actual.getDate() + cantidad));
+    setDia(
+      (actual) =>
+        new Date(
+          actual.getFullYear(),
+          actual.getMonth(),
+          actual.getDate() + cantidad,
+        ),
+    );
   }
 
   return (
@@ -57,7 +86,11 @@ export default function AgendaScreen() {
           <Ionicons name="chevron-back" size={24} color={colores.primary} />
         </Pressable>
         <ThemedText style={[styles.textoDia, { color: colores.textContent }]}>
-          {dia.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+          {dia.toLocaleDateString("es-AR", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          })}
         </ThemedText>
         <Pressable
           onPress={() => cambiarDia(1)}
@@ -71,27 +104,79 @@ export default function AgendaScreen() {
 
       {/* Los tres estados que pide el TFI: cargando, error y vacío */}
       {cargando ? (
-        <ActivityIndicator size="large" color={colores.primary} style={styles.centro} />
+        <ActivityIndicator
+          size="large"
+          color={colores.primary}
+          style={styles.centro}
+        />
       ) : error ? (
-        <ThemedText style={[styles.centro, { color: colores.error }]}>{error}</ThemedText>
+        <ThemedText style={[styles.centro, { color: colores.error }]}>
+          {error}
+        </ThemedText>
       ) : (
         <FlatList
           data={eventos}
           keyExtractor={(evento) => evento.id}
           contentContainerStyle={styles.lista}
           ListEmptyComponent={
-            <ThemedText style={[styles.centro, { color: colores.textContent }]}>No hay eventos este día.</ThemedText>
+            <ThemedText style={[styles.centro, { color: colores.textContent }]}>
+              No hay eventos este día.
+            </ThemedText>
           }
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => router.push({ pathname: "/eventos/[id]", params: { id: item.id } })}
+              onPress={() =>
+                router.push({
+                  pathname: "/eventos/[id]",
+                  params: { id: item.id },
+                })
+              }
               accessibilityRole="button"
               style={[styles.tarjeta, { borderColor: colores.primary }]}
             >
-              {/* inicio = "2026-11-14T21:00:00-03:00": las posiciones 11 a 16 son la hora */}
-              <ThemedText style={[styles.hora, { color: colores.primary }]}>{item.inicio.slice(11, 16)}</ThemedText>
-              <ThemedText style={[styles.titulo, { color: colores.textContent }]}>{item.titulo}</ThemedText>
-              <EtiquetaEstado estado={item.estado} />
+              {item.imagenUrl ? (
+                <Image
+                  source={{ uri: item.imagenUrl }}
+                  style={styles.imagen}
+                  contentFit="cover"
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.imagen,
+                    styles.sinImagen,
+                    { backgroundColor: colores.secondary },
+                  ]}
+                >
+                  <Ionicons name="calendar-outline" size={40} color={colores.primary} />
+                </View>
+              )}
+              <ThemedText style={[styles.hora, { color: colores.primary }]}>
+                {textoHora(item.inicio, aTextoFecha(dia))}
+              </ThemedText>
+              <ThemedText
+                style={[styles.titulo, { color: colores.textContent }]}
+              >
+                {item.titulo}
+              </ThemedText>
+              <View style={styles.fila}>
+                {textoPrecio(item.precio) && (
+                  <View
+                    style={[
+                      styles.precio,
+                      { backgroundColor: colores.secondary },
+                    ]}
+                  >
+                    <ThemedText
+                      type="smallBold"
+                      style={{ color: colores.primary }}
+                    >
+                      {textoPrecio(item.precio)}
+                    </ThemedText>
+                  </View>
+                )}
+                <EtiquetaEstado estado={item.estado} />
+              </View>
             </Pressable>
           )}
         />
@@ -102,12 +187,36 @@ export default function AgendaScreen() {
 
 const styles = StyleSheet.create({
   contenedor: { flex: 1, padding: Spacing.three },
-  selector: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.three },
-  botonDia: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  selector: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.three,
+  },
+  botonDia: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   textoDia: { flex: 1, textAlign: "center", fontSize: 18, fontWeight: "600" },
   centro: { marginTop: Spacing.five, textAlign: "center" },
   lista: { gap: Spacing.three },
-  tarjeta: { borderWidth: 1, borderRadius: 12, padding: Spacing.three, gap: Spacing.two },
+  tarjeta: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
   hora: { fontSize: 18, fontWeight: "700" },
   titulo: { fontSize: 20, lineHeight: 28, fontWeight: "600" },
+  imagen: { width: "100%", height: 140, borderRadius: 8 },
+  sinImagen: { alignItems: "center", justifyContent: "center" },
+  fila: { flexDirection: "row", gap: Spacing.two },
+  precio: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    borderRadius: 8,
+  },
 });
