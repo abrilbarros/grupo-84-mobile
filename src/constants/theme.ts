@@ -20,6 +20,8 @@ export const Colors = {
     textContent: '#24343B',
     error: '#A33333',
     errorBackground: '#FBE8E5',
+    warning: '#9A4A00',
+    warningBackground: '#FDE6CC',
     onPrimary: '#FAFAF7',
   },
   dark: {
@@ -34,6 +36,8 @@ export const Colors = {
     textContent: '#F2F6F3',
     error: '#FFB4A9',
     errorBackground: '#492B32',
+    warning: '#FFC48A',
+    warningBackground: '#4A3320',
     onPrimary: '#15262D',
   },
 } as const;
