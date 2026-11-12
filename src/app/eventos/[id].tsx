@@ -1,24 +1,25 @@
+import Ionicons from "@react-native-vector-icons/ionicons";
+import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { EtiquetaEstado } from "@/components/etiqueta-estado";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useSesion } from "@/contextos/sesion";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { estaGuardado, guardarEvento, quitarEvento } from "@/servicios/avisos";
-import { obtenerEvento } from "@/servicios/eventos";
+import { cambiarEstadoEvento, obtenerEvento } from "@/servicios/eventos";
+import { obtenerLugar } from "@/servicios/lugares";
 import type { Evento } from "@/tipos/evento";
 
-// Texto del día del evento, por ejemplo "sábado, 14 de noviembre".
-// Usamos la fecha escrita en "inicio" (AAAA-MM-DD) para que no cambie con la zona horaria del celular.
 function textoDia(inicio: string): string {
   const [anio, mes, dia] = inicio.slice(0, 10).split("-").map(Number);
   return new Date(anio, mes - 1, dia).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
 }
 
-// Calcula cuánto dura el evento. Si no tiene fin, lo dice.
 function textoDuracion(inicio: string, fin: string | null): string {
   if (fin === null) return "Sin hora de fin";
   const minutos = (new Date(fin).getTime() - new Date(inicio).getTime()) / 60000;
@@ -27,32 +28,51 @@ function textoDuracion(inicio: string, fin: string | null): string {
   return resto === 0 ? `${horas} h` : `${horas} h ${resto} min`;
 }
 
-// precio 0 = gratis, null = no se sabe (PRD).
 function textoPrecio(precio: number | null): string {
   if (precio === null) return "Precio a confirmar";
   if (precio === 0) return "Gratis";
   return `$ ${precio}`;
 }
 
+function esAdmin(token: string): boolean {
+  try {
+    const parte = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(parte)).rol === "admin";
+  } catch {
+    return false;
+  }
+}
+
 export default function DetalleEventoScreen() {
   const colores = useTheme();
-  // El id viene de la dirección: /eventos/evt-017 → id = "evt-017"
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [evento, setEvento] = useState<Evento | null>(null);
   const [cargando, setCargando] = useState(true);
   const [guardado, setGuardado] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [nombreLugar, setNombreLugar] = useState<string | null>(null);
+  const { sesion } = useSesion();
+  const admin = sesion !== null && esAdmin(sesion.token);
 
   useEffect(() => {
+    const control = new AbortController();
     obtenerEvento(id)
-      .then((encontrado) => setEvento(encontrado))
+      .then((encontrado) => {
+        setEvento(encontrado);
+        if (encontrado?.lugarId) {
+          obtenerLugar(encontrado.lugarId, control.signal)
+            .then((lugar) => setNombreLugar(lugar.nombre))
+            .catch(() => {});
+        }
+      })
+      .catch(() => setError(true))
       .finally(() => setCargando(false));
-    // Al abrir, revisa si este evento ya estaba guardado.
     estaGuardado(id).then((resultado) => setGuardado(resultado));
+    return () => control.abort();
   }, [id]);
 
-  // Se ejecuta al tocar el botón: guarda o quita el evento.
   async function alTocarGuardar(eventoActual: Evento) {
     if (guardado) {
       await quitarEvento(eventoActual.id);
@@ -69,9 +89,26 @@ export default function DetalleEventoScreen() {
     }
   }
 
+  async function alCambiarEstado(eventoActual: Evento, nuevo: "programado" | "suspendido" | "cancelado") {
+    if (sesion === null) return;
+    try {
+      setEvento(await cambiarEstadoEvento(eventoActual.id, nuevo, sesion.token));
+      setMensaje(null);
+    } catch {
+      setMensaje("No pudimos cambiar el estado. Intentá de nuevo.");
+    }
+  }
+
+  function confirmarCambio(eventoActual: Evento, nuevo: "programado" | "suspendido" | "cancelado") {
+    const accion = nuevo === "cancelado" ? "cancelar" : nuevo === "suspendido" ? "suspender" : "reanudar";
+    Alert.alert("Confirmar", `¿Seguro que querés ${accion} este evento?`, [
+      { text: "No", style: "cancel" },
+      { text: "Sí", onPress: () => alCambiarEstado(eventoActual, nuevo) },
+    ]);
+  }
+
   return (
     <ThemedView style={styles.contenedor}>
-      {/* Barra de arriba con el botón para volver, con los colores de la app */}
       <Stack.Screen
         options={{
           headerShown: true,
@@ -83,36 +120,57 @@ export default function DetalleEventoScreen() {
 
       {cargando ? (
         <ActivityIndicator size="large" color={colores.primary} style={styles.centro} />
+      ) : error ? (
+        <ThemedText style={[styles.centro, { color: colores.textContent }]}>
+          No pudimos cargar el evento. Revisá tu conexión.
+        </ThemedText>
       ) : evento === null ? (
         <ThemedText style={[styles.centro, { color: colores.textContent }]}>No encontramos este evento.</ThemedText>
       ) : (
         <ScrollView contentContainerStyle={styles.contenido}>
+          {evento.imagenUrl ? (
+            <Image source={{ uri: evento.imagenUrl }} style={styles.imagen} contentFit="cover" />
+          ) : (
+            <View style={[styles.imagen, styles.sinImagen, { backgroundColor: colores.secondary }]}>
+              <Ionicons name="calendar-outline" size={48} color={colores.primary} />
+            </View>
+          )}
           <ThemedText style={[styles.titulo, { color: colores.textContent }]}>{evento.titulo}</ThemedText>
           <EtiquetaEstado estado={evento.estado} />
 
-          {/* Cada dato que pide el PRD: cuándo, cuánto dura, dónde, precio y qué es */}
           <View style={[styles.tarjeta, { borderColor: colores.primary }]}>
-            <ThemedText type="smallBold" style={{ color: colores.primary }}>Cuándo empieza</ThemedText>
+            <View style={styles.filaTitulo}>
+              <Ionicons name="time-outline" size={22} color={colores.primary} />
+              <ThemedText style={[styles.tituloDato, { color: colores.primary }]}>Cuándo empieza</ThemedText>
+            </View>
             <ThemedText style={{ color: colores.textContent }}>
-              {textoDia(evento.inicio)} a las {evento.inicio.slice(11, 16)}
+              {textoDia(evento.inicio)} a las {evento.inicio.slice(11, 16)} hs
             </ThemedText>
 
-            <ThemedText type="smallBold" style={{ color: colores.primary }}>Cuánto dura</ThemedText>
+            <View style={styles.filaTitulo}>
+              <Ionicons name="hourglass-outline" size={22} color={colores.primary} />
+              <ThemedText style={[styles.tituloDato, { color: colores.primary }]}>Cuánto dura</ThemedText>
+            </View>
             <ThemedText style={{ color: colores.textContent }}>{textoDuracion(evento.inicio, evento.fin)}</ThemedText>
 
-            <ThemedText type="smallBold" style={{ color: colores.primary }}>Dónde</ThemedText>
+            <View style={styles.filaTitulo}>
+              <Ionicons name="location-outline" size={22} color={colores.primary} />
+              <ThemedText style={[styles.tituloDato, { color: colores.primary }]}>Dónde</ThemedText>
+            </View>
             <ThemedText style={{ color: colores.textContent }}>
-              {evento.direccionLibre ?? "En un lugar del catálogo"}
+              {evento.direccionLibre ?? nombreLugar ?? "En un lugar del catálogo"}
             </ThemedText>
 
-            <ThemedText type="smallBold" style={{ color: colores.primary }}>Precio</ThemedText>
+            <View style={styles.filaTitulo}>
+              <Ionicons name="pricetag-outline" size={22} color={colores.primary} />
+              <ThemedText style={[styles.tituloDato, { color: colores.primary }]}>Precio</ThemedText>
+            </View>
             <ThemedText style={{ color: colores.textContent }}>{textoPrecio(evento.precio)}</ThemedText>
           </View>
 
-          <ThemedText type="smallBold" style={{ color: colores.primary }}>Qué es</ThemedText>
+          <ThemedText style={[styles.tituloDato, { color: colores.primary }]}>Qué es</ThemedText>
           <ThemedText style={{ color: colores.textContent }}>{evento.descripcion}</ThemedText>
 
-          {/* Solo se puede guardar si el evento no está cancelado ni terminado (como en la API) */}
           {(evento.estado === "programado" || evento.estado === "suspendido") && (
             <Pressable
               onPress={() => alTocarGuardar(evento)}
@@ -123,6 +181,28 @@ export default function DetalleEventoScreen() {
                 {guardado ? "Guardado ✓ (tocá para quitar)" : "Guardar y avisarme"}
               </ThemedText>
             </Pressable>
+          )}
+          {admin && (evento.estado === "programado" || evento.estado === "suspendido") && (
+            <View style={styles.filaBotones}>
+              <Pressable
+                onPress={() => confirmarCambio(evento, evento.estado === "programado" ? "suspendido" : "programado")}
+                style={[styles.botonAdmin, { borderColor: colores.primary }]}
+                role="button"
+              >
+                <ThemedText type="smallBold" style={{ color: colores.primary }}>
+                  {evento.estado === "programado" ? "Suspender" : "Reanudar"}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => confirmarCambio(evento, "cancelado")}
+                style={[styles.botonAdmin, { borderColor: colores.error }]}
+                role="button"
+              >
+                <ThemedText type="smallBold" style={{ color: colores.error }}>
+                  Cancelar evento
+                </ThemedText>
+              </Pressable>
+            </View>
           )}
           {mensaje !== null && <ThemedText style={{ color: colores.textContent }}>{mensaje}</ThemedText>}
         </ScrollView>
@@ -137,5 +217,11 @@ const styles = StyleSheet.create({
   centro: { marginTop: Spacing.five, textAlign: "center" },
   titulo: { fontSize: 26, lineHeight: 34, fontWeight: "700" },
   tarjeta: { borderWidth: 1, borderRadius: 12, padding: Spacing.three, gap: Spacing.two },
+  imagen: { width: "100%", height: 100, borderRadius: 12 },
+  sinImagen: { alignItems: "center", justifyContent: "center" },
+  tituloDato: { fontSize: 16, fontWeight: "800" },
+  filaTitulo: { flexDirection: "row", alignItems: "center", gap: Spacing.one },
+  filaBotones: { flexDirection: "row", gap: Spacing.two },
+  botonAdmin: { flex: 1, minHeight: 48, borderWidth: 1, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   boton: { minHeight: 48, borderRadius: 14, padding: Spacing.three, alignItems: "center", justifyContent: "center" },
 });

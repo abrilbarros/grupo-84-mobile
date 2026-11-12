@@ -18,8 +18,6 @@ import { useTheme } from "@/hooks/use-theme";
 import { listarEventos } from "@/servicios/eventos";
 import type { Evento } from "@/tipos/evento";
 
-// Convierte una fecha al formato "AAAA-MM-DD" que usa el servicio.
-// No usamos toISOString() porque pasa a hora UTC y de noche cambiaría el día.
 function aTextoFecha(fecha: Date): string {
   const anio = fecha.getFullYear();
   const mes = String(fecha.getMonth() + 1).padStart(2, "0");
@@ -27,15 +25,12 @@ function aTextoFecha(fecha: Date): string {
   return `${anio}-${mes}-${dia}`;
 }
 
-// Texto de la hora de la tarjeta. Si el evento empezó otro día
-// (por ej. ayer a la noche y sigue después de medianoche), lo aclara.
 function textoHora(inicio: string, fecha: string): string {
   const hora = inicio.slice(11, 16);
-  if (inicio.startsWith(fecha)) return hora;
-  return `Desde el ${inicio.slice(8, 10)}/${inicio.slice(5, 7)}, ${hora}`;
+  if (inicio.startsWith(fecha)) return `${hora} hs`;
+  return `Empezó el ${inicio.slice(8, 10)}/${inicio.slice(5, 7)} a las ${hora} hs`;
 }
 
-// Texto del precio: 0 es gratis; null es que no se sabe (no se muestra nada).
 function textoPrecio(precio: number | null): string | null {
   if (precio === null) return null;
   if (precio === 0) return "Gratis";
@@ -45,13 +40,11 @@ function textoPrecio(precio: number | null): string | null {
 export default function AgendaScreen() {
   const colores = useTheme();
 
-  // Estado de la pantalla. El PRD pide empezar por hoy.
   const [dia, setDia] = useState(new Date());
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Cada vez que cambia el día, pide los eventos de ese día al servicio.
   useEffect(() => {
     setCargando(true);
     setError(null);
@@ -61,7 +54,6 @@ export default function AgendaScreen() {
       .finally(() => setCargando(false));
   }, [dia]);
 
-  // Suma o resta días (cantidad = 1 o -1).
   function cambiarDia(cantidad: number) {
     setDia(
       (actual) =>
@@ -75,7 +67,6 @@ export default function AgendaScreen() {
 
   return (
     <ThemedView style={styles.contenedor}>
-      {/* Selector de día: botones grandes para usar con una mano (PRD) */}
       <View style={styles.selector}>
         <Pressable
           onPress={() => cambiarDia(-1)}
@@ -102,7 +93,6 @@ export default function AgendaScreen() {
         </Pressable>
       </View>
 
-      {/* Los tres estados que pide el TFI: cargando, error y vacío */}
       {cargando ? (
         <ActivityIndicator
           size="large"
