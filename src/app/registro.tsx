@@ -10,7 +10,7 @@ import {
 } from "@/components/cuenta-ui";
 import { ThemedText } from "@/components/themed-text";
 import { Spacing } from "@/constants/theme";
-import { ErrorSesionSegura, useSesion } from "@/contextos/sesion";
+import { useSesion } from "@/contextos/sesion";
 import { CuentaVerificacion } from "@/components/cuenta-verificacion";
 import { useTheme } from "@/hooks/use-theme";
 import {
@@ -50,18 +50,20 @@ export default function RegistroScreen() {
     const control = new AbortController();
     solicitud.current = control;
     setCargando(true);
+    let cuentaCreada = false;
     try {
       const nuevaSesion = await registrar(datos, control.signal);
       if (control.signal.aborted) return;
-      setContrasena("");
+      cuentaCreada = true;
       await iniciarSesion(nuevaSesion);
       if (control.signal.aborted) return;
+      setContrasena("");
       router.replace("/(tabs)/perfil");
     } catch (fallo) {
       if (!control.signal.aborted)
         setError(
-          fallo instanceof ErrorSesionSegura
-            ? fallo.message
+          cuentaCreada
+            ? "Tu cuenta se creó, pero no pudimos guardar la sesión. Iniciá sesión con tu correo y contraseña."
             : mensajeDeRegistro(fallo),
         );
     } finally {
@@ -136,6 +138,7 @@ export default function RegistroScreen() {
               limpiarError("contrasena");
             }}
             esContrasena
+            ocultarContrasena={cargando}
             autoComplete="new-password"
             autoCapitalize="none"
             autoCorrect={false}
