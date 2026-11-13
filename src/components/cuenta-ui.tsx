@@ -146,6 +146,7 @@ export function CuentaBoton({
 
 export function CuentaCampo({
   etiqueta,
+  etiquetaId,
   error,
   esContrasena = false,
   ocultarContrasena = false,
@@ -153,6 +154,7 @@ export function CuentaCampo({
   ...props
 }: TextInputProps & {
   etiqueta: string;
+  etiquetaId?: string;
   error?: string;
   esContrasena?: boolean;
   ocultarContrasena?: boolean;
@@ -166,7 +168,7 @@ export function CuentaCampo({
   const mostrar = visible && !ocultarContrasena;
   return (
     <View style={{ gap: Spacing.two }}>
-      <ThemedText style={{ color: colores.textContent }}>{etiqueta}</ThemedText>
+      <ThemedText nativeID={etiquetaId} style={{ color: colores.textContent }}>{etiqueta}</ThemedText>
       <View style={[styles.campo, { borderColor: colores.primary }]}>
         <TextInput
           {...props}

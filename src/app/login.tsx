@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Redirect, router } from "expo-router";
-import { Keyboard, Pressable, StyleSheet, TextInput, View } from "react-native";
-import Ionicons from "@react-native-vector-icons/ionicons";
+import { Keyboard, StyleSheet, TextInput, View } from "react-native";
 import {
   CuentaBoton,
+  CuentaCampo,
   CuentaContenedor,
   CuentaError,
   CuentaLogo,
@@ -25,7 +25,6 @@ export default function LoginScreen() {
   const { sesion, iniciarSesion, restaurando, errorRestauracion } = useSesion();
   const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
-  const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [errores, setErrores] = useState<ErroresIngreso>({});
   const [error, setError] = useState<string>();
   const [cargando, setCargando] = useState(false);
@@ -39,7 +38,6 @@ export default function LoginScreen() {
     setErrores(validacion);
     setError(undefined);
     if (Object.keys(validacion).length) return;
-    setMostrarContrasena(false);
     Keyboard.dismiss();
     const control = new AbortController();
     solicitud.current = control;
@@ -111,65 +109,28 @@ export default function LoginScreen() {
         />
         <CuentaError mensaje={errores.email} />
       </View>
-      <View style={styles.grupo}>
-        <ThemedText nativeID="contrasena-label" style={{ color: colores.textContent }}>
-          Contraseña
-        </ThemedText>
-        <View
-          style={[
-            styles.contrasena,
-            {
-              backgroundColor: colores.background,
-              borderColor: colores.primary,
-            },
-          ]}
-        >
-          <TextInput
-            ref={campoContrasena}
-            placeholder="Ingresá tu contraseña"
-            placeholderTextColor={colores.primary}
-            style={[
-              styles.campo,
-              styles.entradaContrasena,
-              { color: colores.textContent },
-            ]}
-            value={contrasena}
-            onChangeText={(valor) => {
-              setContrasena(valor);
-              setErrores((previos) => ({ ...previos, contrasena: undefined }));
-              setError(undefined);
-            }}
-            editable={!cargando}
-            accessibilityLabel="Contraseña"
-            accessibilityLabelledBy="contrasena-label"
-            aria-invalid={!!errores.contrasena}
-            secureTextEntry={!mostrarContrasena}
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="current-password"
-            returnKeyType="go"
-            onSubmitEditing={enviar}
-          />
-          <Pressable
-            role="button"
-            accessibilityLabel={
-              mostrarContrasena ? "Ocultar contraseña" : "Mostrar contraseña"
-            }
-            accessibilityState={{ disabled: cargando }}
-            disabled={cargando}
-            onPress={() => setMostrarContrasena((visible) => !visible)}
-            style={styles.ojo}
-          >
-            <Ionicons
-              name={mostrarContrasena ? "eye-off-outline" : "eye-outline"}
-              size={22}
-              color={colores.primary}
-              accessible={false}
-            />
-          </Pressable>
-        </View>
-        <CuentaError mensaje={errores.contrasena} />
-      </View>
+      <CuentaCampo
+        etiqueta="Contraseña"
+        etiquetaId="contrasena-label"
+        accessibilityLabelledBy="contrasena-label"
+        placeholder="Ingresá tu contraseña"
+        value={contrasena}
+        error={errores.contrasena}
+        inputRef={campoContrasena}
+        editable={!cargando}
+        esContrasena
+        ocultarContrasena={cargando}
+        onChangeText={(valor) => {
+          setContrasena(valor);
+          setErrores((previos) => ({ ...previos, contrasena: undefined }));
+          setError(undefined);
+        }}
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="current-password"
+        returnKeyType="go"
+        onSubmitEditing={enviar}
+      />
       <CuentaError mensaje={error} />
       <CuentaBoton titulo="Ingresar" onPress={enviar} cargando={cargando} />
       <CuentaBoton
@@ -193,19 +154,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     marginBottom: Spacing.two,
-  },
-  contrasena: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 12,
-  },
-  entradaContrasena: { flex: 1, minWidth: 0, borderWidth: 0 },
-  ojo: {
-    minWidth: 48,
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
   },
   grupo: { gap: Spacing.two },
   campo: {
