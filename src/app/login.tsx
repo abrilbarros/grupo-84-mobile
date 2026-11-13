@@ -39,6 +39,7 @@ export default function LoginScreen() {
     setErrores(validacion);
     setError(undefined);
     if (Object.keys(validacion).length) return;
+    setMostrarContrasena(false);
     Keyboard.dismiss();
     const control = new AbortController();
     solicitud.current = control;
@@ -46,9 +47,9 @@ export default function LoginScreen() {
     try {
       const nuevaSesion = await ingresar(email, contrasena, control.signal);
       if (control.signal.aborted) return;
-      setContrasena("");
       await iniciarSesion(nuevaSesion);
       if (control.signal.aborted) return;
+      setContrasena("");
       router.replace("/(tabs)/perfil");
     } catch (fallo) {
       if (!control.signal.aborted)
