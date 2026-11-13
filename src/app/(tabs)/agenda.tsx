@@ -1,7 +1,7 @@
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,6 +15,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { revisarCambios } from "@/servicios/avisos";
 import { listarEventos } from "@/servicios/eventos";
 import type { Evento } from "@/tipos/evento";
 
@@ -45,14 +46,17 @@ export default function AgendaScreen() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setCargando(true);
-    setError(null);
-    listarEventos(aTextoFecha(dia))
-      .then((lista) => setEventos(lista))
-      .catch(() => setError("No pudimos cargar los eventos. Probá de nuevo."))
-      .finally(() => setCargando(false));
-  }, [dia]);
+  useFocusEffect(
+    useCallback(() => {
+      setCargando(true);
+      setError(null);
+      listarEventos(aTextoFecha(dia))
+        .then((lista) => setEventos(lista))
+        .catch(() => setError("No pudimos cargar los eventos. Probá de nuevo."))
+        .finally(() => setCargando(false));
+      revisarCambios().catch(console.warn);
+    }, [dia]),
+  );
 
   function cambiarDia(cantidad: number) {
     setDia(

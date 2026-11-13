@@ -204,6 +204,19 @@ export default function DetalleEventoScreen() {
               </Pressable>
             </View>
           )}
+          {admin && evento.estado === "cancelado" && (
+            <View style={styles.filaBotones}>
+              <Pressable
+                onPress={() => confirmarCambio(evento, "programado")}
+                style={[styles.botonAdmin, { borderColor: colores.primary }]}
+                role="button"
+              >
+                <ThemedText type="smallBold" style={{ color: colores.primary }}>
+                  Reactivar evento
+                </ThemedText>
+              </Pressable>
+            </View>
+          )}
           {mensaje !== null && <ThemedText style={{ color: colores.textContent }}>{mensaje}</ThemedText>}
         </ScrollView>
       )}
