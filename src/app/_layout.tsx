@@ -5,6 +5,9 @@ import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { useTheme } from "@/hooks/use-theme";
+import { LogBox } from "react-native";
+
+LogBox.ignoreLogs(["expo-notifications"]);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
