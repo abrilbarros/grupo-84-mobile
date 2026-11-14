@@ -16,7 +16,7 @@ import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { revisarCambios } from "@/servicios/avisos";
-import { listarEventos } from "@/servicios/eventos";
+import { guardarAgenda, leerAgenda, listarEventos } from "@/servicios/eventos";
 import type { Evento } from "@/tipos/evento";
 
 function aTextoFecha(fecha: Date): string {
@@ -45,14 +45,28 @@ export default function AgendaScreen() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sinConexion, setSinConexion] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       setCargando(true);
       setError(null);
-      listarEventos(aTextoFecha(dia))
-        .then((lista) => setEventos(lista))
-        .catch(() => setError("No pudimos cargar los eventos. Probá de nuevo."))
+      setSinConexion(false);
+      const fecha = aTextoFecha(dia);
+      listarEventos(fecha)
+        .then((lista) => {
+          setEventos(lista);
+          guardarAgenda(fecha, lista);
+        })
+        .catch(() => {
+          const guardada = leerAgenda(fecha);
+          if (guardada) {
+            setEventos(guardada);
+            setSinConexion(true);
+          } else {
+            setError("No pudimos cargar los eventos. Probá de nuevo.");
+          }
+        })
         .finally(() => setCargando(false));
       revisarCambios().catch(console.warn);
     }, [dia]),
@@ -112,6 +126,13 @@ export default function AgendaScreen() {
           data={eventos}
           keyExtractor={(evento) => evento.id}
           contentContainerStyle={styles.lista}
+          ListHeaderComponent={
+            sinConexion ? (
+              <ThemedText style={{ color: colores.error }}>
+                Sin conexión: mostrando la última información guardada.
+              </ThemedText>
+            ) : null
+          }
           ListEmptyComponent={
             <ThemedText style={[styles.centro, { color: colores.textContent }]}>
               No hay eventos este día.
