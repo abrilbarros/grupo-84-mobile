@@ -11,7 +11,7 @@ import { useSesion } from "@/contextos/sesion";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { estaGuardado, guardarEvento, quitarEvento } from "@/servicios/avisos";
-import { cambiarEstadoEvento, obtenerEvento } from "@/servicios/eventos";
+import { cambiarEstadoEvento, leerEventoGuardado, obtenerEvento } from "@/servicios/eventos";
 import { obtenerLugar } from "@/servicios/lugares";
 import type { Evento } from "@/tipos/evento";
 
@@ -67,7 +67,11 @@ export default function DetalleEventoScreen() {
             .catch(() => {});
         }
       })
-      .catch(() => setError(true))
+      .catch(() => {
+        const copia = leerEventoGuardado(id);
+        if (copia) setEvento(copia);
+        else setError(true);
+      })
       .finally(() => setCargando(false));
     estaGuardado(id).then((resultado) => setGuardado(resultado));
     return () => control.abort();

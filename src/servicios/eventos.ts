@@ -1,3 +1,5 @@
+import Storage from "expo-sqlite/kv-store";
+
 import type { RespuestaLista, RespuestaUno } from "@/tipos/api";
 import type { Evento } from "@/tipos/evento";
 import { ErrorApi, solicitar } from "./api";
@@ -36,4 +38,21 @@ export async function cambiarEstadoEvento(
     },
   );
   return respuesta.datos;
+}
+
+export function guardarAgenda(fecha: string, eventos: Evento[]) {
+  Storage.setItemSync(`agenda-${fecha}`, JSON.stringify(eventos));
+  eventos.forEach((evento) =>
+    Storage.setItemSync(`evento-${evento.id}`, JSON.stringify(evento)),
+  );
+}
+
+export function leerAgenda(fecha: string): Evento[] | null {
+  const texto = Storage.getItemSync(`agenda-${fecha}`);
+  return texto === null ? null : JSON.parse(texto);
+}
+
+export function leerEventoGuardado(id: string): Evento | null {
+  const texto = Storage.getItemSync(`evento-${id}`);
+  return texto === null ? null : JSON.parse(texto);
 }
