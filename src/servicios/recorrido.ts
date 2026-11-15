@@ -1,16 +1,77 @@
 import type { Visita, OrigenVisita } from "@/tipos/visita";
 import { solicitar } from "./api";
+import { File } from "expo-file-system";
+import type { Lugar } from "@/tipos/recorrido";
 
-export async function registrarVisita(lugarId: string, origen: OrigenVisita): Promise<Visita> {
-  const respuesta = await solicitar<Visita>("/visitas", {
+export async function registrarVisita(
+  token: string,
+  lugarId: string,
+  origen: OrigenVisita,
+  nota: string | null,
+  fotoUri: string | null,
+): Promise<Visita> {
+  const respuesta = await solicitar<{
+    datos: Visita;
+    meta: null;
+  }>("/yo/visitas", {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       lugarId,
       origen,
       fechaHora: new Date().toISOString(),
+      nota,
+      fotoUri: null,
     }),
   });
-  return respuesta;
+
+  return respuesta.datos;
+}
+
+export async function subirFotografia(
+  token: string,
+  fotoUri: string,
+): Promise<string> {
+  const formulario = new FormData();
+
+  const archivo = new File(fotoUri);
+
+  formulario.append("archivo", archivo);
+
+  const respuesta = await solicitar<{
+    datos: {
+      url: string;
+    };
+    meta: null;
+  }>("/archivos", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formulario,
+  });
+
+  return respuesta.datos.url;
+}
+
+export async function actualizarFotoVisita(
+  token: string,
+  visitaId: string,
+  fotoUri: string,
+): Promise<void> {
+  await solicitar(`/yo/visitas/${visitaId}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fotoUri,
+    }),
+  });
 }
 
 export async function obtenerCategorias() {
@@ -24,8 +85,33 @@ export async function obtenerLugares(categoriaId?: string) {
   return respuesta.datos || respuesta;
 }
 
-// Traer un lugar específico por su ID (vital para cuando escaneamos el QR)
-export async function obtenerLugarPorId(id: string) {
-  const respuesta = await solicitar<any>(`/lugares/${id}`);
-  return respuesta.datos || respuesta;
+export async function obtenerLugarPorQr(
+  codigo: string,
+): Promise<Lugar> {
+  const respuesta = await solicitar<{
+    datos: Lugar;
+    meta: null;
+  }>(`/lugares/qr/${encodeURIComponent(codigo)}`);
+
+  return respuesta.datos;
+}
+
+export async function obtenerLugaresCercanos(
+  latitud: number,
+  longitud: number,
+  radioMetros: number,
+): Promise<Lugar[]> {
+  const parametros = new URLSearchParams({
+    latitud: String(latitud),
+    longitud: String(longitud),
+    radioMetros: String(radioMetros),
+    orden: "distancia",
+  });
+
+  const respuesta = await solicitar<{
+    datos: Lugar[];
+    meta: null;
+  }>(`/lugares?${parametros.toString()}`);
+
+  return respuesta.datos;
 }
