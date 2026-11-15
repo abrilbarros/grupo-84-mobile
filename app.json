@@ -57,7 +57,8 @@
           "faceIDPermission": "Usamos Face ID para verificar tu identidad y proteger el acceso a tu sesión guardada"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,

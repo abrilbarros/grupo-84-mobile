@@ -5,6 +5,7 @@ import { ThemedView } from "@/components/themed-view";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { AvisoDeFavoritos } from "../componentes/aviso-de-favoritos";
+import { AvisoSinConexion } from "../componentes/aviso-sin-conexion";
 import { BotonDeAccion } from "../componentes/boton-de-accion";
 import { BotonDeFavorito } from "../componentes/boton-de-favorito";
 import { EtiquetaDeApertura } from "../componentes/etiqueta-de-apertura";
@@ -13,6 +14,7 @@ import { FilaDeInformacion } from "../componentes/fila-de-informacion";
 import { GaleriaDeImagenesDelLugar } from "../componentes/galeria-de-imagenes-del-lugar";
 import { ListaDeHorarios } from "../componentes/lista-de-horarios";
 import { MensajeDeEstado } from "../componentes/mensaje-de-estado";
+import { ReproductorDeAudioguia } from "../componentes/reproductor-de-audioguia";
 import { useCatalogoDeLugares } from "../hooks/use-catalogo-de-lugares";
 import { useFavoritosDelUsuario } from "../hooks/use-favoritos-del-usuario";
 import { useLugarPorIdentificador } from "../hooks/use-lugar-por-identificador";
@@ -37,7 +39,7 @@ export function PantallaDeDetalleDelLugar() {
     ? () => (
         <BotonDeFavorito
           esFavorito={favoritos.esFavorito(lugar.id)}
-          estaDeshabilitado={favoritos.estaOcupado}
+          estaDeshabilitado={favoritos.estaProcesando(lugar.id)}
           alPresionar={() => favoritos.alPresionarFavorito(lugar.id)}
         />
       )
@@ -96,6 +98,7 @@ export function PantallaDeDetalleDelLugar() {
           categoria={categoria}
         />
         <View style={estilos.cuerpo}>
+          {catalogo.estaSinConexion && <AvisoSinConexion />}
           {favoritos.huboError && <AvisoDeFavoritos />}
           {categoria && (
             <ThemedText type="smallBold" themeColor="primary">
@@ -110,6 +113,9 @@ export function PantallaDeDetalleDelLugar() {
           />
           <EtiquetaDeDistancia distanciaEnMetros={distanciaEnMetros} />
           <ThemedText themeColor="textContent">{lugar.descripcion}</ThemedText>
+          {lugar.audioguia && (
+            <ReproductorDeAudioguia audioguia={lugar.audioguia} />
+          )}
 
           <View style={estilos.acciones}>
             <BotonDeAccion

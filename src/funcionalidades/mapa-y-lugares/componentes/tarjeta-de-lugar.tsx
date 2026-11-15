@@ -58,7 +58,7 @@ export function TarjetaDeLugar({
       </Pressable>
       <BotonDeFavorito
         esFavorito={controlDeFavoritos.esFavorito(lugar.id)}
-        estaDeshabilitado={controlDeFavoritos.estaOcupado}
+        estaDeshabilitado={controlDeFavoritos.estaProcesando(lugar.id)}
         alPresionar={() => controlDeFavoritos.alPresionarFavorito(lugar.id)}
       />
     </View>

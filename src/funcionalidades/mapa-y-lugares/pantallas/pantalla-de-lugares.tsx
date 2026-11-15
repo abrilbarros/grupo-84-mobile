@@ -75,7 +75,7 @@ export function PantallaDeLugares() {
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             <View style={estilos.avisos}>
-              {catalogo.estaMostrandoCopiaGuardada && <AvisoSinConexion />}
+              {catalogo.estaSinConexion && <AvisoSinConexion />}
               {favoritos.huboError && <AvisoDeFavoritos />}
               <AvisoDeUbicacion
                 estadoDelPermiso={ubicacion.estadoDelPermiso}

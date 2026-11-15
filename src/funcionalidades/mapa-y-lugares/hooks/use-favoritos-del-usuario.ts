@@ -1,96 +1,64 @@
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useSesion } from "@/contextos/sesion";
-import { agregarFavorito, quitarFavorito } from "@/servicios/favoritos";
-import { descargarIdentificadoresDeLugaresFavoritos } from "../servicios/servicio-de-favoritos-del-usuario";
+import type { ControlDeFavoritos } from "../modelos/control-de-favoritos";
+import {
+  alternarFavorito,
+  establecerCuentaDeFavoritos,
+  obtenerEstadoDeFavoritos,
+  recargarFavoritos,
+  suscribirseAFavoritos,
+} from "../servicios/almacen-de-favoritos";
 
-export function useFavoritosDelUsuario() {
+export interface FavoritosDelUsuario extends ControlDeFavoritos {
+  huboError: boolean;
+}
+
+export function useFavoritosDelUsuario(): FavoritosDelUsuario {
   const { sesion } = useSesion();
   const token = sesion?.token ?? null;
-  const [identificadoresDeLugaresFavoritos, setIdentificadoresDeLugaresFavoritos] =
-    useState<string[]>([]);
-  const [tokenConFavoritosCargados, setTokenConFavoritosCargados] = useState<
-    string | null
-  >(null);
-  const [identificadorDelLugarEnProceso, setIdentificadorDelLugarEnProceso] =
-    useState<string | null>(null);
-  const [huboError, setHuboError] = useState(false);
+  const estadoDeFavoritos = useSyncExternalStore(
+    suscribirseAFavoritos,
+    obtenerEstadoDeFavoritos,
+  );
 
   useEffect(() => {
-    if (token === null) {
-      setIdentificadoresDeLugaresFavoritos([]);
-      return;
-    }
-    const controlDeCancelacion = new AbortController();
-    descargarIdentificadoresDeLugaresFavoritos(token, controlDeCancelacion.signal)
-      .then(setIdentificadoresDeLugaresFavoritos)
-      .catch(() => {
-        if (!controlDeCancelacion.signal.aborted) setHuboError(true);
-      })
-      .finally(() => {
-        if (!controlDeCancelacion.signal.aborted) {
-          setTokenConFavoritosCargados(token);
-        }
-      });
-    return () => controlDeCancelacion.abort();
+    establecerCuentaDeFavoritos(token);
   }, [token]);
 
-  async function alternarFavorito(identificadorDelLugar: string) {
-    if (token === null || identificadorDelLugarEnProceso !== null) return;
-    const eraFavorito =
-      identificadoresDeLugaresFavoritos.includes(identificadorDelLugar);
-
-    setHuboError(false);
-    setIdentificadorDelLugarEnProceso(identificadorDelLugar);
-    setIdentificadoresDeLugaresFavoritos((identificadoresActuales) =>
-      eraFavorito
-        ? identificadoresActuales.filter(
-            (identificador) => identificador !== identificadorDelLugar,
-          )
-        : [...identificadoresActuales, identificadorDelLugar],
-    );
-
-    try {
-      const senalDeCancelacion = new AbortController().signal;
-      if (eraFavorito) {
-        await quitarFavorito(token, identificadorDelLugar, senalDeCancelacion);
-      } else {
-        await agregarFavorito(token, identificadorDelLugar, senalDeCancelacion);
-      }
-    } catch {
-      setIdentificadoresDeLugaresFavoritos((identificadoresActuales) =>
-        eraFavorito
-          ? [...identificadoresActuales, identificadorDelLugar]
-          : identificadoresActuales.filter(
-              (identificador) => identificador !== identificadorDelLugar,
-            ),
-      );
-      setHuboError(true);
-    } finally {
-      setIdentificadorDelLugarEnProceso(null);
-    }
-  }
+  useFocusEffect(
+    useCallback(() => {
+      void recargarFavoritos();
+    }, []),
+  );
 
   function esFavorito(identificadorDelLugar: string): boolean {
-    return identificadoresDeLugaresFavoritos.includes(identificadorDelLugar);
+    return estadoDeFavoritos.identificadoresDeLugaresFavoritos.includes(
+      identificadorDelLugar,
+    );
   }
 
-  function alPresionarFavorito(identificadorDelLugar: string) {
+  function estaProcesando(identificadorDelLugar: string): boolean {
+    return (
+      estadoDeFavoritos.estaCargando ||
+      estadoDeFavoritos.identificadoresDeLugaresEnProceso.includes(
+        identificadorDelLugar,
+      )
+    );
+  }
+
+  function alPresionarFavorito(identificadorDelLugar: string): void {
     if (token === null) {
       router.push("/login");
       return;
     }
-    alternarFavorito(identificadorDelLugar);
+    void alternarFavorito(identificadorDelLugar);
   }
 
-  const estaCargandoFavoritos =
-    token !== null && tokenConFavoritosCargados !== token;
-
   return {
-    huboError,
-    estaOcupado:
-      estaCargandoFavoritos || identificadorDelLugarEnProceso !== null,
+    huboError: estadoDeFavoritos.huboError,
     esFavorito,
+    estaProcesando,
     alPresionarFavorito,
   };
 }
