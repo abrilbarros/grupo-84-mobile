@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { useSesion } from "@/contextos/sesion";
 import { agregarFavorito, quitarFavorito } from "@/servicios/favoritos";
@@ -70,12 +71,26 @@ export function useFavoritosDelUsuario() {
     }
   }
 
+  function esFavorito(identificadorDelLugar: string): boolean {
+    return identificadoresDeLugaresFavoritos.includes(identificadorDelLugar);
+  }
+
+  function alPresionarFavorito(identificadorDelLugar: string) {
+    if (token === null) {
+      router.push("/login");
+      return;
+    }
+    alternarFavorito(identificadorDelLugar);
+  }
+
+  const estaCargandoFavoritos =
+    token !== null && tokenConFavoritosCargados !== token;
+
   return {
-    haySesion: token !== null,
-    estaCargando: token !== null && tokenConFavoritosCargados !== token,
-    identificadoresDeLugaresFavoritos,
-    identificadorDelLugarEnProceso,
     huboError,
-    alternarFavorito,
+    estaOcupado:
+      estaCargandoFavoritos || identificadorDelLugarEnProceso !== null,
+    esFavorito,
+    alPresionarFavorito,
   };
 }

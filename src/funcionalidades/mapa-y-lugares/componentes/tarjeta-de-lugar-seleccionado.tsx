@@ -6,8 +6,10 @@ import { useTheme } from "@/hooks/use-theme";
 import type { Categoria } from "@/tipos/categoria";
 import type { Coordenadas } from "@/tipos/coordenadas";
 import { ALTURA_MINIMA_DE_TOQUE, RADIO_DE_BORDE } from "../constantes/medidas";
+import type { ControlDeFavoritos } from "../modelos/control-de-favoritos";
 import type { LugarConDistancia } from "../modelos/lugar-con-distancia";
 import { BotonDeAccion } from "./boton-de-accion";
+import { BotonDeFavorito } from "./boton-de-favorito";
 import { EtiquetaDeDistancia } from "./etiqueta-de-distancia";
 import { FlechaHaciaElLugar } from "./flecha-hacia-el-lugar";
 
@@ -15,6 +17,7 @@ interface PropiedadesDeTarjetaDeLugarSeleccionado {
   lugarConDistancia: LugarConDistancia;
   categoria: Categoria | undefined;
   ubicacionDelUsuario: Coordenadas | null;
+  controlDeFavoritos: ControlDeFavoritos;
   alVerDetalle: (identificadorDelLugar: string) => void;
   alPedirComoLlegar: (destino: Coordenadas) => void;
   alCerrar: () => void;
@@ -24,6 +27,7 @@ export function TarjetaDeLugarSeleccionado({
   lugarConDistancia,
   categoria,
   ubicacionDelUsuario,
+  controlDeFavoritos,
   alVerDetalle,
   alPedirComoLlegar,
   alCerrar,
@@ -53,14 +57,21 @@ export function TarjetaDeLugarSeleccionado({
           )}
           <EtiquetaDeDistancia distanciaEnMetros={distanciaEnMetros} />
         </View>
-        <Pressable
-          onPress={alCerrar}
-          accessibilityRole="button"
-          accessibilityLabel="Cerrar"
-          style={estilos.botonDeCierre}
-        >
-          <Ionicons name="close" size={28} color={colores.textContent} />
-        </Pressable>
+        <View style={estilos.controles}>
+          <BotonDeFavorito
+            esFavorito={controlDeFavoritos.esFavorito(lugar.id)}
+            estaDeshabilitado={controlDeFavoritos.estaOcupado}
+            alPresionar={() => controlDeFavoritos.alPresionarFavorito(lugar.id)}
+          />
+          <Pressable
+            onPress={alCerrar}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar"
+            style={estilos.botonDeCierre}
+          >
+            <Ionicons name="close" size={28} color={colores.textContent} />
+          </Pressable>
+        </View>
       </View>
       <FlechaHaciaElLugar
         ubicacionDelUsuario={ubicacionDelUsuario}
@@ -108,6 +119,9 @@ const estilos = StyleSheet.create({
     fontSize: 20,
     lineHeight: 26,
     fontWeight: "700",
+  },
+  controles: {
+    flexDirection: "row",
   },
   botonDeCierre: {
     alignItems: "center",

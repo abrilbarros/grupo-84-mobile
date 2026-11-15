@@ -1,10 +1,10 @@
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { AvisoInformativo } from "../componentes/aviso-informativo";
+import { AvisoDeFavoritos } from "../componentes/aviso-de-favoritos";
 import { BotonDeAccion } from "../componentes/boton-de-accion";
 import { BotonDeFavorito } from "../componentes/boton-de-favorito";
 import { EtiquetaDeApertura } from "../componentes/etiqueta-de-apertura";
@@ -33,22 +33,12 @@ export function PantallaDeDetalleDelLugar() {
   const { lugar, estaCargando, huboErrorSinCopiaGuardada } =
     useLugarPorIdentificador(identificadorDelLugar);
 
-  function alPresionarFavorito() {
-    if (!favoritos.haySesion) {
-      router.push("/login");
-      return;
-    }
-    if (lugar) favoritos.alternarFavorito(lugar.id);
-  }
-
   const botonDeFavorito = lugar
     ? () => (
         <BotonDeFavorito
-          esFavorito={favoritos.identificadoresDeLugaresFavoritos.includes(lugar.id)}
-          estaDeshabilitado={
-            favoritos.estaCargando || favoritos.identificadorDelLugarEnProceso !== null
-          }
-          alPresionar={alPresionarFavorito}
+          esFavorito={favoritos.esFavorito(lugar.id)}
+          estaDeshabilitado={favoritos.estaOcupado}
+          alPresionar={() => favoritos.alPresionarFavorito(lugar.id)}
         />
       )
     : undefined;
@@ -106,12 +96,7 @@ export function PantallaDeDetalleDelLugar() {
           categoria={categoria}
         />
         <View style={estilos.cuerpo}>
-          {favoritos.huboError && (
-            <AvisoInformativo
-              tipo="advertencia"
-              mensaje="No pudimos actualizar tus favoritos. Probá de nuevo en un rato."
-            />
-          )}
+          {favoritos.huboError && <AvisoDeFavoritos />}
           {categoria && (
             <ThemedText type="smallBold" themeColor="primary">
               {categoria.nombre}
