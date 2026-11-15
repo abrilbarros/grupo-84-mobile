@@ -2,7 +2,6 @@
 import * as SQLite from "expo-sqlite";
 
 import type { Categoria, Lugar } from "@/tipos/recorrido";
-import type { Visita } from "@/tipos/visita";
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -32,16 +31,6 @@ async function obtenerDB() {
       longitud REAL
     );
 
-    CREATE TABLE IF NOT EXISTS visitas (
-      id TEXT PRIMARY KEY NOT NULL,
-      usuarioId TEXT NOT NULL,
-      lugarId TEXT NOT NULL,
-      fechaHora TEXT NOT NULL,
-      origen TEXT NOT NULL,
-      fotoUri TEXT,
-      nota TEXT,
-      sincronizada INTEGER NOT NULL
-    );
   `);
 
   return db;
@@ -145,60 +134,4 @@ export async function obtenerLugaresLocales(
         }
       : {}),
   }));
-}
-
-// Guarda una visita local pendiente de sincronización.
-export async function guardarVisitaLocal(
-  visita: Visita,
-): Promise<void> {
-  const db = await obtenerDB();
-
-  await db.runAsync(
-    `INSERT INTO visitas (
-      id,
-      usuarioId,
-      lugarId,
-      fechaHora,
-      origen,
-      fotoUri,
-      nota,
-      sincronizada
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    visita.id,
-    visita.usuarioId,
-    visita.lugarId,
-    visita.fechaHora,
-    visita.origen,
-    visita.fotoUri,
-    visita.nota,
-    visita.sincronizada ? 1 : 0,
-  );
-}
-
-// Recupera las visitas que todavía no se sincronizaron.
-export async function obtenerVisitasPendientes(): Promise<Visita[]> {
-  const db = await obtenerDB();
-
-  const filas = await db.getAllAsync<
-    Omit<Visita, "sincronizada"> & { sincronizada: number }
-  >(
-    "SELECT * FROM visitas WHERE sincronizada = 0 ORDER BY fechaHora ASC",
-  );
-
-  return filas.map((visita) => ({
-    ...visita,
-    sincronizada: Boolean(visita.sincronizada),
-  }));
-}
-
-// Marca una visita como sincronizada.
-export async function marcarVisitaSincronizada(
-  id: string,
-): Promise<void> {
-  const db = await obtenerDB();
-
-  await db.runAsync(
-    "UPDATE visitas SET sincronizada = 1 WHERE id = ?",
-    id,
-  );
 }

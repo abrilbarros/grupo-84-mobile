@@ -12,7 +12,7 @@ export function CuentaLogo() {
       source={logo}
       contentFit="contain"
       style={styles.logo}
-      accessibilityLabel="Mi Ciudad"
+      accessibilityLabel="Viví Colón"
     />
   );
 }

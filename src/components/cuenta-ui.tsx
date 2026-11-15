@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
   type ComponentProps,
   type ReactNode,
@@ -145,28 +146,36 @@ export function CuentaBoton({
 
 export function CuentaCampo({
   etiqueta,
+  etiquetaId,
   error,
   esContrasena = false,
+  ocultarContrasena = false,
   inputRef,
   ...props
 }: TextInputProps & {
   etiqueta: string;
+  etiquetaId?: string;
   error?: string;
   esContrasena?: boolean;
+  ocultarContrasena?: boolean;
   inputRef?: RefObject<TextInput | null>;
 }) {
   const colores = useTheme();
   const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (ocultarContrasena) setVisible(false);
+  }, [ocultarContrasena]);
+  const mostrar = visible && !ocultarContrasena;
   return (
     <View style={{ gap: Spacing.two }}>
-      <ThemedText style={{ color: colores.textContent }}>{etiqueta}</ThemedText>
+      <ThemedText nativeID={etiquetaId} style={{ color: colores.textContent }}>{etiqueta}</ThemedText>
       <View style={[styles.campo, { borderColor: colores.primary }]}>
         <TextInput
           {...props}
           ref={inputRef}
           accessibilityLabel={etiqueta}
           aria-invalid={!!error}
-          secureTextEntry={esContrasena && !visible}
+          secureTextEntry={esContrasena && !mostrar}
           placeholderTextColor={colores.primary}
           style={[styles.entrada, { color: colores.textContent }, props.style]}
         />
@@ -174,7 +183,7 @@ export function CuentaCampo({
           <Pressable
             role="button"
             accessibilityLabel={
-              visible ? "Ocultar contraseña" : "Mostrar contraseña"
+              mostrar ? "Ocultar contraseña" : "Mostrar contraseña"
             }
             accessibilityState={{ disabled: props.editable === false }}
             disabled={props.editable === false}
@@ -182,7 +191,7 @@ export function CuentaCampo({
             style={styles.ojo}
           >
             <Ionicons
-              name={visible ? "eye-off-outline" : "eye-outline"}
+              name={mostrar ? "eye-off-outline" : "eye-outline"}
               size={22}
               color={colores.primary}
               accessible={false}

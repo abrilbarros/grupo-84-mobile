@@ -21,16 +21,16 @@ export function CuentaVerificacion({
     useSesion();
   const colores = useTheme();
   const [accionPendiente, setAccionPendiente] = useState<
-    "contrasena" | "salir" | null
+    "contrasena" | null
   >(null);
   const cierreEnCurso = useRef(false);
-  async function salir(conContrasena = false) {
+  async function salir() {
     if (cierreEnCurso.current) return;
     cierreEnCurso.current = true;
-    setAccionPendiente(conContrasena ? "contrasena" : "salir");
+    setAccionPendiente("contrasena");
     try {
       await cerrarSesion();
-      if (conContrasena) router.replace("/login");
+      router.replace("/login");
     } catch {
       /* El contexto muestra el error y permite reintentar. */
     } finally {
@@ -71,7 +71,7 @@ export function CuentaVerificacion({
             deshabilitado={accionPendiente !== null}
             textoCarga="Cerrando sesión…"
             onPress={() => {
-              void salir(true);
+              void salir();
             }}
           />
         </View>

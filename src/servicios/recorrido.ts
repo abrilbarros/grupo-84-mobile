@@ -1,7 +1,7 @@
-import type { Visita, OrigenVisita } from "@/tipos/visita";
+import type { Visita } from "@/tipos/visita";
 import { solicitar } from "./api";
 import { File } from "expo-file-system";
-import type { Lugar } from "@/tipos/recorrido";
+import type { DatosParaRegistrarVisita, Lugar } from "@/tipos/recorrido";
 
 import { ErrorConexion } from "./api";
 
@@ -14,11 +14,7 @@ import {
 
 export async function registrarVisita(
   token: string,
-  lugarId: string,
-  origen: OrigenVisita,
-  nota: string | null,
-  fotoUri: string | null,
-  fechaHora: string = new Date().toISOString(),
+  datosDeLaVisita: DatosParaRegistrarVisita,
 ): Promise<Visita> {
   const respuesta = await solicitar<{
     datos: Visita;
@@ -30,10 +26,11 @@ export async function registrarVisita(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      lugarId,
-      origen,
-      fechaHora,
-      nota,
+      id: datosDeLaVisita.id,
+      lugarId: datosDeLaVisita.lugarId,
+      origen: datosDeLaVisita.origen,
+      fechaHora: datosDeLaVisita.fechaHora,
+      nota: datosDeLaVisita.nota,
       fotoUri: null,
     }),
   });

@@ -13,15 +13,9 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/hooks/use-theme";
 import { Spacing } from "@/constants/theme";
-import { useSesion } from "@/contextos/sesion";
 
-import {
-  obtenerCategorias,
-  obtenerLugares,
-  registrarVisita,
-  subirFotografia,
-  actualizarFotoVisita,
-} from "@/servicios/recorrido";
+import { obtenerCategorias, obtenerLugares } from "@/servicios/recorrido";
+import { guardarVisitaEnElTelefono } from "@/funcionalidades/mi-recorrido/servicios/registro-de-visitas-en-el-telefono";
 
 import { OrigenVisita } from "@/tipos/visita";
 
@@ -32,22 +26,14 @@ import { BotonRecorrido } from "@/components/ui/botones-recorrido";
 
 import type { Categoria, Lugar } from "@/tipos/recorrido";
 
-import {
-  guardarVisitaLocal,
-  obtenerVisitasPendientes,
-  marcarVisitaSincronizada,
-} from "@/servicios/recorrido-local";
-
-import type { Visita } from "@/tipos/visita";
-
 export function FormularioVisita({
   metodo,
-  token,
+  usuarioId,
   onCancelar,
   lugarInicial,
 }: {
   metodo: string;
-  token: string;
+  usuarioId: string;
   onCancelar: () => void;
   lugarInicial?: Lugar;
 }) {
@@ -65,8 +51,6 @@ export function FormularioVisita({
   const [cargandoLugares, setCargandoLugares] = useState(false);
   const [cargandoCategorias, setCargandoCategorias] = useState(false);
   const [guardandoVisita, setGuardandoVisita] = useState(false);
-
-  const { sesion } = useSesion();
 
   useEffect(() => {
     async function cargarCategorias() {
@@ -134,73 +118,22 @@ export function FormularioVisita({
       return;
     }
 
-    if (!sesion?.usuario.id) {
-      alert("No se pudo identificar al usuario.");
-      return;
-    }
-
     setGuardandoVisita(true);
 
     try {
-      const visitaLocal: Visita = {
-        id: `visita-${Date.now()}`,
-        usuarioId: sesion.usuario.id,
+      await guardarVisitaEnElTelefono({
+        usuarioId,
         lugarId: lugarSeleccionado.id,
-        fechaHora: new Date().toISOString(),
         origen: metodo as OrigenVisita,
-        fotoUri: fotoUri,
         nota: nota.trim() || null,
-        sincronizada: false,
-      };
+        direccionTemporalDeLaFotografia: fotoUri,
+      });
 
-      await guardarVisitaLocal(visitaLocal);
-
-      const pendientes = await obtenerVisitasPendientes();
-
-      console.log("Visitas pendientes en SQLite:", pendientes);
-      console.log("Visita guardada localmente:", visitaLocal);
-
-      try {
-        const visita = await registrarVisita(
-          token,
-          lugarSeleccionado.id,
-          metodo as OrigenVisita,
-          nota.trim() || null,
-          null,
-        );
-
-        console.log("Visita registrada en el servidor:", visita);
-
-        if (fotoUri) {
-          const urlFoto = await subirFotografia(token, fotoUri);
-
-          await actualizarFotoVisita(
-            token,
-            visita.id,
-            urlFoto,
-          );
-
-          console.log("Fotografía subida:", urlFoto);
-        }
-
-        await marcarVisitaSincronizada(visitaLocal.id);
-
-        onCancelar();
-      } catch (error) {
-        console.log(
-          "La visita quedó pendiente de sincronización:",
-          error,
-        );
-
-        alert(
-          "La visita quedó guardada en el dispositivo y pendiente de sincronización.",
-        );
-
-        onCancelar();
-      }
+      onCancelar();
     } catch (error) {
-      console.error("Error al guardar la visita:", error);
-      alert("No se pudo guardar la visita.");
+      console.error("Error al guardar la visita en el teléfono:", error);
+
+      alert("No pudimos guardar la visita en tu teléfono. Probá de nuevo.");
     } finally {
       setGuardandoVisita(false);
     }

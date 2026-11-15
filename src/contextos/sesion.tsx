@@ -3,6 +3,7 @@ import { obtenerUsuarioActual } from "@/servicios/cuenta";
 import type { Sesion } from "@/tipos/api";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
+import { router, useNavigationContainerRef } from "expo-router";
 import {
   createContext,
   useCallback,
@@ -13,9 +14,6 @@ import {
   type ReactNode,
 } from "react";
 import { Platform } from "react-native";
-
-import * as Network from "expo-network";
-import { sincronizarVisitas } from "@/servicios/sincronizacion";
 
 const CLAVE_TOKEN = "mi-ciudad.token";
 const CLAVE_BIOMETRIA = "mi-ciudad.biometria";
@@ -57,6 +55,8 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     null,
   );
   const version = useRef(0);
+  const perfilPendiente = useRef<number | null>(null);
+  const navegacion = useNavigationContainerRef();
   const consulta = useRef<AbortController | null>(null);
   const almacenamiento = useRef<Promise<void>>(Promise.resolve());
 
@@ -108,6 +108,7 @@ export function SesionProvider({ children }: { children: ReactNode }) {
 
   const restaurarSesion = useCallback(async () => {
     const actual = ++version.current;
+    perfilPendiente.current = null;
     consulta.current?.abort();
     const control = new AbortController();
     consulta.current = control;
@@ -135,7 +136,12 @@ export function SesionProvider({ children }: { children: ReactNode }) {
         preferencia === "true" || cuentas.includes(usuarioId ?? "");
       setBiometriaActiva(activa);
       if (activa && !biometriaVerificada.current) {
-        await verificarBiometria();
+        try {
+          await verificarBiometria();
+        } catch (error) {
+          if (actual === version.current) perfilPendiente.current = actual;
+          throw error;
+        }
         if (actual !== version.current) return;
         biometriaVerificada.current = true;
       }
@@ -192,39 +198,32 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     void restaurarSesion();
     return () => {
       ++version.current;
+      perfilPendiente.current = null;
       consulta.current?.abort();
     };
   }, [restaurarSesion]);
+
   useEffect(() => {
-    if (!sesion || restaurando) return;
-    const token = sesion.token;
-
-    let sincronizacionEnCurso = false;
-
-    async function intentarSincronizar() {
-      if (sincronizacionEnCurso) return;
-
-      sincronizacionEnCurso = true;
-
-      try {
-        await sincronizarVisitas(token);
-      } catch (error) {
-        console.error("Error al sincronizar visitas pendientes:", error);
-      } finally {
-        sincronizacionEnCurso = false;
+    if (perfilPendiente.current === null) return;
+    function mostrarPerfil() {
+      if (perfilPendiente.current !== version.current) {
+        perfilPendiente.current = null;
+        return;
       }
+      if (restaurando || !errorRestauracion) return;
+      if (!navegacion.isReady()) return;
+      // Consumimos la navegación antes de ejecutarla para evitar repeticiones.
+      perfilPendiente.current = null;
+      router.navigate("/(tabs)/perfil");
     }
-
-    void intentarSincronizar();
-
-    const suscripcion = Network.addNetworkStateListener((estado) => {
-      if (estado.isConnected === true && estado.isInternetReachable !== false) {
-        void intentarSincronizar();
-      }
-    });
-
-    return () => suscripcion.remove();
-  }, [sesion, restaurando]);
+    const quitarReady = navegacion.addListener("ready", mostrarPerfil);
+    const quitarState = navegacion.addListener("state", mostrarPerfil);
+    mostrarPerfil();
+    return () => {
+      quitarReady();
+      quitarState();
+    };
+  }, [errorRestauracion, restaurando, navegacion]);
 
   async function activarBiometria() {
     if (!sesion) return;
@@ -289,6 +288,7 @@ export function SesionProvider({ children }: { children: ReactNode }) {
 
   async function iniciarSesion(nuevaSesion: Sesion) {
     const actual = ++version.current;
+    perfilPendiente.current = null;
     consulta.current?.abort();
     try {
       const activa = ES_WEB
@@ -325,6 +325,7 @@ export function SesionProvider({ children }: { children: ReactNode }) {
   async function cerrarSesion() {
     // Invalida incluso una restauración cuya respuesta ya esté en camino.
     const actual = ++version.current;
+    perfilPendiente.current = null;
     consulta.current?.abort();
     try {
       if (!ES_WEB)

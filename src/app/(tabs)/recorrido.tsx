@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import { StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 
@@ -10,8 +10,7 @@ import { FormularioVisita } from "@/components/recorrido/FormularioVisita";
 import { LectorQR } from "@/components/recorrido/LectorQR";
 import { ListaVisitas } from "@/components/ui/ListaVisitas";
 
-import type { Lugar, Categoria } from "@/tipos/recorrido";
-import type { Visita } from "@/tipos/visita";
+import type { Lugar } from "@/tipos/recorrido";
 
 import * as Location from "expo-location";
 
@@ -21,12 +20,9 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import { useTheme } from "@/hooks/use-theme";
 import { Spacing } from "@/constants/theme";
 
-import {
-  obtenerLugaresCercanos,
-  obtenerMisVisitas,
-  obtenerLugares,
-  obtenerCategorias,
-} from "@/servicios/recorrido";
+import { obtenerLugaresCercanos } from "@/servicios/recorrido";
+import { useCatalogoDeLugares } from "@/funcionalidades/mapa-y-lugares/hooks/use-catalogo-de-lugares";
+import { useRecorridoDelUsuario } from "@/funcionalidades/mi-recorrido/hooks/use-recorrido-del-usuario";
 
 export default function RecorridoScreen() {
   const { sesion } = useSesion();
@@ -35,52 +31,16 @@ export default function RecorridoScreen() {
   const [lugarQR, setLugarQR] = useState<Lugar | null>(null);
   const [lugarGPS, setLugarGPS] = useState<Lugar | null>(null);
   const [buscandoGPS, setBuscandoGPS] = useState(false);
-  const [visitas, setVisitas] = useState<Visita[]>([]);
-  const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [cargandoVisitas, setCargandoVisitas] = useState(true);
   const colores = useTheme();
-
-  useEffect(() => {
-    if (!sesion) return;
-
-    const cargarDatos = async () => {
-      try {
-        setCargandoVisitas(true);
-
-        const [visitasObtenidas, lugaresObtenidos, categoriasObtenidas] =
-          await Promise.all([
-            obtenerMisVisitas(sesion.token),
-            obtenerLugares(),
-            obtenerCategorias(),
-          ]);
-
-        setVisitas(visitasObtenidas);
-        setLugares(lugaresObtenidos);
-        setCategorias(categoriasObtenidas);
-      } catch (error) {
-        console.error("Error al cargar el recorrido:", error);
-        Alert.alert(
-          "Error",
-          "No pudimos cargar tus visitas. Intentá nuevamente.",
-        );
-      } finally {
-        setCargandoVisitas(false);
-      }
-    };
-
-    cargarDatos();
-  }, [sesion]);
-
-  async function actualizarVisitas(token: string) {
-    try {
-      const visitasActualizadas = await obtenerMisVisitas(token);
-      setVisitas(visitasActualizadas);
-    } catch (error) {
-      console.error("Error al actualizar las visitas:", error);
-      Alert.alert("Error", "No pudimos actualizar tu recorrido.");
-    }
-  }
+  const catalogo = useCatalogoDeLugares();
+  const {
+    visitas,
+    estaCargando: cargandoVisitas,
+    recargar: actualizarVisitas,
+  } = useRecorridoDelUsuario(
+    sesion?.token ?? null,
+    sesion?.usuario.id ?? null,
+  );
 
   const buscarLugarPorGPS = async () => {
     try {
@@ -246,12 +206,12 @@ export default function RecorridoScreen() {
     return (
       <FormularioVisita
         metodo="qr"
-        token={sesion.token}
+        usuarioId={sesion.usuario.id}
         lugarInicial={lugarQR}
         onCancelar={() => {
           setLugarQR(null);
           setMetodoRegistro(null);
-          actualizarVisitas(sesion.token);
+          actualizarVisitas();
         }}
       />
     );
@@ -261,12 +221,12 @@ export default function RecorridoScreen() {
     return (
       <FormularioVisita
         metodo="gps"
-        token={sesion.token}
+        usuarioId={sesion.usuario.id}
         lugarInicial={lugarGPS}
         onCancelar={() => {
           setLugarGPS(null);
           setMetodoRegistro(null);
-          actualizarVisitas(sesion.token);
+          actualizarVisitas();
         }}
       />
     );
@@ -276,10 +236,10 @@ export default function RecorridoScreen() {
     return (
       <FormularioVisita
         metodo="manual"
-        token={sesion.token}
+        usuarioId={sesion.usuario.id}
         onCancelar={() => {
           setMetodoRegistro(null);
-          actualizarVisitas(sesion.token);
+          actualizarVisitas();
         }}
       />
     );
@@ -336,8 +296,8 @@ export default function RecorridoScreen() {
         ) : (
           <ListaVisitas
             visitas={visitas}
-            lugares={lugares}
-            categorias={categorias}
+            lugares={catalogo.lugares}
+            categorias={catalogo.categorias}
           />
         )}
       </ThemedView>

@@ -85,4 +85,4 @@ Detenela con `Ctrl+C`. La base permanece en `datos/api.sqlite` y los archivos en
 
 Con el backend encendido, abrí [Swagger](http://localhost:3000/docs). Ahí están los endpoints, campos y errores. Para las cuentas de demo y otras configuraciones, consultá el README original del backend.
 
-Para integrar nuevos módulos: el servicio HTTP del móvil todavía intenta leer JSON en todas las respuestas. Antes de usarlo con una operación que devuelve `204` sin cuerpo, habrá que contemplar ese caso.
+Para integrar nuevos módulos: el servicio HTTP del móvil ya admite respuestas `204 No Content` sin intentar leer JSON y conserva el procesamiento de las respuestas JSON.

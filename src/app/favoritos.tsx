@@ -39,6 +39,9 @@ export default function FavoritosScreen() {
   const [quitando, setQuitando] = useState<string>();
   const [error, setError] = useState<string>();
   const [sesionRechazada, setSesionRechazada] = useState(false);
+  const [imagenesFallidas, setImagenesFallidas] = useState<
+    Record<string, boolean>
+  >({});
   const consulta = useRef<AbortController | null>(null);
   const operacionEnCurso = useRef(false);
 
@@ -68,7 +71,10 @@ export default function FavoritosScreen() {
     setCargando(true);
     setError(undefined);
     setSesionRechazada(false);
-    if (pagina === 1) setDatos(null);
+    if (pagina === 1) {
+      setDatos(null);
+      setImagenesFallidas({});
+    }
     try {
       const respuesta = await listarFavoritos(token, pagina, control.signal);
       if (control.signal.aborted) return;
@@ -272,12 +278,22 @@ export default function FavoritosScreen() {
                       key={favorito.id}
                       style={[styles.fila, { borderColor: colores.primary }]}
                     >
-                      {lugar?.imagenes[0] ? (
+                      {lugar?.imagenes[0] &&
+                      !imagenesFallidas[
+                        JSON.stringify([favorito.id, lugar.imagenes[0]])
+                      ] ? (
                         <Image
                           source={{ uri: lugar.imagenes[0] }}
                           contentFit="cover"
                           style={styles.imagen}
                           accessibilityLabel={`Imagen de ${lugar.nombre}`}
+                          onError={() => {
+                            setImagenesFallidas((anteriores) => ({
+                              ...anteriores,
+                              [JSON.stringify([favorito.id, lugar.imagenes[0]])]:
+                                true,
+                            }));
+                          }}
                         />
                       ) : (
                         <View
@@ -286,8 +302,16 @@ export default function FavoritosScreen() {
                             { backgroundColor: colores.secondary },
                           ]}
                         >
-                          <ThemedText style={{ color: colores.textContent }}>
-                            Sin imagen
+                          <Ionicons
+                            name="image-outline"
+                            size={24}
+                            color={colores.primary}
+                            accessible={false}
+                          />
+                          <ThemedText
+                            style={{ color: colores.textContent, textAlign: "center" }}
+                          >
+                            Imagen no disponible
                           </ThemedText>
                         </View>
                       )}
@@ -296,6 +320,10 @@ export default function FavoritosScreen() {
                       >
                         {lugar?.nombre ?? "Lugar no disponible"}
                       </ThemedText>
+                      <View
+                        accessible={false}
+                        style={[styles.separador, { backgroundColor: colores.primary }]}
+                      />
                       <ThemedText style={{ color: colores.textContent }}>
                         {lugar?.descripcionCorta ??
                           "No pudimos cargar la información de este lugar. Podés reintentar o quitarlo de tus favoritos."}
@@ -368,11 +396,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   nombre: { fontSize: 20, lineHeight: 28, fontWeight: "600" },
+  separador: { height: 1, alignSelf: "stretch", opacity: 0.32 },
   imagen: { width: "100%", aspectRatio: 2.2, borderRadius: 8 },
   sinImagen: {
     minHeight: 80,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    gap: Spacing.one,
   },
 });
