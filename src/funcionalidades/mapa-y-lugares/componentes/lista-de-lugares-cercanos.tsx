@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Spacing } from "@/constants/theme";
 import type { Categoria } from "@/tipos/categoria";
 import { CANTIDAD_DE_LUGARES_CERCANOS_A_MOSTRAR } from "../constantes/cantidades";
+import type { ControlDeFavoritos } from "../modelos/control-de-favoritos";
 import type { LugarConDistancia } from "../modelos/lugar-con-distancia";
 import { BotonDeAccion } from "./boton-de-accion";
 import { MensajeDeEstado } from "./mensaje-de-estado";
@@ -13,6 +14,7 @@ interface PropiedadesDeListaDeLugaresCercanos {
   titulo: string;
   lugaresConDistancia: LugarConDistancia[];
   categoriasPorIdentificador: Record<string, Categoria>;
+  controlDeFavoritos: ControlDeFavoritos;
   avisos: ReactNode;
   alPresionarLugar: (identificadorDelLugar: string) => void;
   alVerTodosLosLugares: () => void;
@@ -22,6 +24,7 @@ export function ListaDeLugaresCercanos({
   titulo,
   lugaresConDistancia,
   categoriasPorIdentificador,
+  controlDeFavoritos,
   avisos,
   alPresionarLugar,
   alVerTodosLosLugares,
@@ -58,6 +61,7 @@ export function ListaDeLugaresCercanos({
         <TarjetaDeLugar
           lugarConDistancia={item}
           categoria={categoriasPorIdentificador[item.lugar.categoriaId]}
+          controlDeFavoritos={controlDeFavoritos}
           alPresionar={alPresionarLugar}
         />
       )}

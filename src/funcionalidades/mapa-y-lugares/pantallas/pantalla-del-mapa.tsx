@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { AvisoDeFavoritos } from "../componentes/aviso-de-favoritos";
 import { AvisoDeUbicacion } from "../componentes/aviso-de-ubicacion";
 import { AvisoSinConexion } from "../componentes/aviso-sin-conexion";
 import { BotonDeCentradoEnUbicacion } from "../componentes/boton-de-centrado-en-ubicacion";
@@ -15,6 +16,7 @@ import {
 } from "../componentes/mapa-de-lugares";
 import { TarjetaDeLugarSeleccionado } from "../componentes/tarjeta-de-lugar-seleccionado";
 import { useCatalogoDeLugares } from "../hooks/use-catalogo-de-lugares";
+import { useFavoritosDelUsuario } from "../hooks/use-favoritos-del-usuario";
 import { useFiltrosDeLugares } from "../hooks/use-filtros-de-lugares";
 import { useUbicacionDelUsuario } from "../hooks/use-ubicacion-del-usuario";
 import { abrirAplicacionDeMapas } from "../utilidades/abrir-aplicacion-de-mapas";
@@ -25,6 +27,7 @@ export function PantallaDelMapa() {
   const catalogo = useCatalogoDeLugares();
   const ubicacion = useUbicacionDelUsuario();
   const filtros = useFiltrosDeLugares();
+  const favoritos = useFavoritosDelUsuario();
   const controladorDelMapa = useRef<ControladorDelMapa>(null);
   const [identificadorDelLugarSeleccionado, setIdentificadorDelLugarSeleccionado] =
     useState<string | null>(null);
@@ -92,6 +95,7 @@ export function PantallaDelMapa() {
                 ]
               }
               ubicacionDelUsuario={ubicacion.coordenadas}
+              controlDeFavoritos={favoritos}
               alVerDetalle={navegarAlDetalleDelLugar}
               alPedirComoLlegar={abrirAplicacionDeMapas}
               alCerrar={() => setIdentificadorDelLugarSeleccionado(null)}
@@ -110,9 +114,11 @@ export function PantallaDelMapa() {
             titulo={tituloDeLaLista}
             lugaresConDistancia={lugaresVisibles}
             categoriasPorIdentificador={catalogo.categoriasPorIdentificador}
+            controlDeFavoritos={favoritos}
             avisos={
               <>
                 {catalogo.estaMostrandoCopiaGuardada && <AvisoSinConexion />}
+                {favoritos.huboError && <AvisoDeFavoritos />}
                 <AvisoDeUbicacion
                   estadoDelPermiso={ubicacion.estadoDelPermiso}
                   alSolicitarUbicacion={ubicacion.solicitarUbicacionNuevamente}
