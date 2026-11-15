@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
@@ -29,6 +30,7 @@ import { obtenerEstadoDeApertura } from "../utilidades/obtener-estado-de-apertur
 export function PantallaDeDetalleDelLugar() {
   const { id: identificadorDelLugar } = useLocalSearchParams<{ id: string }>();
   const colores = useTheme();
+  const margenesSeguros = useSafeAreaInsets();
   const catalogo = useCatalogoDeLugares();
   const ubicacion = useUbicacionDelUsuario();
   const favoritos = useFavoritosDelUsuario();
@@ -92,7 +94,12 @@ export function PantallaDeDetalleDelLugar() {
   return (
     <ThemedView style={estilos.pantalla}>
       {encabezado}
-      <ScrollView contentContainerStyle={estilos.contenido}>
+      <ScrollView
+        contentContainerStyle={[
+          estilos.contenido,
+          { paddingBottom: Spacing.six + margenesSeguros.bottom },
+        ]}
+      >
         <GaleriaDeImagenesDelLugar
           direccionesDeImagenes={lugar.imagenes}
           categoria={categoria}

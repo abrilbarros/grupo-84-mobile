@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { AvisoDeFavoritos } from "../componentes/aviso-de-favoritos";
@@ -21,6 +22,7 @@ import { navegarAlDetalleDelLugar } from "../utilidades/navegar-al-detalle-del-l
 import { obtenerLugaresVisibles } from "../utilidades/obtener-lugares-visibles";
 
 export function PantallaDeLugares() {
+  const margenesSeguros = useSafeAreaInsets();
   const catalogo = useCatalogoDeLugares();
   const ubicacion = useUbicacionDelUsuario();
   const filtros = useFiltrosDeLugares();
@@ -71,7 +73,10 @@ export function PantallaDeLugares() {
         <FlatList
           data={lugaresVisibles}
           keyExtractor={(elemento) => elemento.lugar.id}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[
+            estilos.lista,
+            { paddingBottom: Spacing.three + margenesSeguros.bottom },
+          ]}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             <View style={estilos.avisos}>
