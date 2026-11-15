@@ -67,6 +67,24 @@ export function TarjetaVisita({
             </ThemedText>
           </View>
 
+          {!visita.sincronizada && (
+            <View
+              style={[
+                styles.etiquetaPendiente,
+                { backgroundColor: colores.warningBackground },
+              ]}
+            >
+              <Ionicons
+                name="cloud-upload-outline"
+                size={16}
+                color={colores.warning}
+              />
+              <ThemedText type="smallBold" style={{ color: colores.warning }}>
+                Pendiente de subir
+              </ThemedText>
+            </View>
+          )}
+
           <View style={styles.fecha}>
             <Ionicons
               name="calendar-outline"
@@ -171,6 +189,15 @@ const styles = StyleSheet.create({
   },
   etiquetaCategoria: {
     alignSelf: "flex-start",
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+    borderRadius: 20,
+  },
+  etiquetaPendiente: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
     borderRadius: 20,

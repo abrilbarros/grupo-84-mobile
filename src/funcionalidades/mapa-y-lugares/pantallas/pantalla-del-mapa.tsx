@@ -117,7 +117,7 @@ export function PantallaDelMapa() {
             controlDeFavoritos={favoritos}
             avisos={
               <>
-                {catalogo.estaMostrandoCopiaGuardada && <AvisoSinConexion />}
+                {catalogo.estaSinConexion && <AvisoSinConexion />}
                 {favoritos.huboError && <AvisoDeFavoritos />}
                 <AvisoDeUbicacion
                   estadoDelPermiso={ubicacion.estadoDelPermiso}

@@ -1,5 +1,5 @@
 export interface ControlDeFavoritos {
   esFavorito: (identificadorDelLugar: string) => boolean;
-  estaOcupado: boolean;
+  estaProcesando: (identificadorDelLugar: string) => boolean;
   alPresionarFavorito: (identificadorDelLugar: string) => void;
 }

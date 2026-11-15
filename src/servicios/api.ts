@@ -15,6 +15,20 @@ export class ErrorConexion extends Error {
   }
 }
 
+export class ErrorRespuestaInvalida extends Error {
+  constructor(public readonly estado: number) {
+    super("El servidor respondió algo que no pudimos entender. Intentá nuevamente.");
+  }
+}
+
+async function leerCuerpoJson(respuesta: Response): Promise<unknown> {
+  try {
+    return await respuesta.json();
+  } catch {
+    return null;
+  }
+}
+
 // Las pantallas no conocen la URL ni interpretan respuestas HTTP.
 export async function solicitar<T>(
   ruta: string,
@@ -39,11 +53,12 @@ export async function solicitar<T>(
     }
     if (respuesta.status === 204) return undefined as T;
     // No se exponen cuerpos internos, trazas ni mensajes técnicos al usuario.
-    const cuerpo = await respuesta.json();
+    const cuerpo = await leerCuerpoJson(respuesta);
     if (!respuesta.ok) {
       const error = cuerpo as Partial<RespuestaError> | null;
       throw new ErrorApi(respuesta.status, error?.error?.codigo ?? "");
     }
+    if (cuerpo === null) throw new ErrorRespuestaInvalida(respuesta.status);
     return cuerpo as T;
   } finally {
     clearTimeout(espera);

@@ -12,16 +12,10 @@ import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/hooks/use-theme";
 import { Spacing } from "@/constants/theme";
 
-import {
-  obtenerCategorias,
-  obtenerLugares,
-  registrarVisita,
-  subirFotografia,
-  actualizarFotoVisita,
-} from "@/servicios/recorrido";
+import { obtenerCategorias, obtenerLugares } from "@/servicios/recorrido";
+import { guardarVisitaEnElTelefono } from "@/funcionalidades/mi-recorrido/servicios/registro-de-visitas-en-el-telefono";
 
 import { OrigenVisita } from "@/tipos/visita";
-import { ErrorApi } from "@/servicios/api";
 
 import { SelectorCategoria } from "@/components/recorrido/SelectorCategoria";
 import { SelectorLugar } from "@/components/recorrido/SelectorLugar";
@@ -32,12 +26,12 @@ import type { Categoria, Lugar } from "@/tipos/recorrido";
 
 export function FormularioVisita({
   metodo,
-  token,
+  usuarioId,
   onCancelar,
   lugarInicial,
 }: {
   metodo: string;
-  token: string;
+  usuarioId: string;
   onCancelar: () => void;
   lugarInicial?: Lugar;
 }) {
@@ -106,33 +100,19 @@ export function FormularioVisita({
     }
 
     try {
-      const visita = await registrarVisita(
-        token,
-        lugarSeleccionado.id,
-        metodo as OrigenVisita,
-        nota.trim() || null,
-        null,
-      );
-
-      console.log("Visita registrada:", visita);
-
-      if (fotoUri) {
-        const urlFoto = await subirFotografia(token, fotoUri);
-        await actualizarFotoVisita(token, visita.id, urlFoto);
-
-        console.log("Fotografía subida:", urlFoto);
-      }
+      await guardarVisitaEnElTelefono({
+        usuarioId,
+        lugarId: lugarSeleccionado.id,
+        origen: metodo as OrigenVisita,
+        nota: nota.trim() || null,
+        direccionTemporalDeLaFotografia: fotoUri,
+      });
 
       onCancelar();
     } catch (error) {
-      if (error instanceof ErrorApi) {
-        console.error("Estado HTTP:", error.estado);
-        console.error("Código:", error.codigo);
-      } else {
-        console.error("Error:", error);
-      }
+      console.error("Error al guardar la visita en el teléfono:", error);
 
-      alert("No se pudo registrar la visita.");
+      alert("No pudimos guardar la visita en tu teléfono. Probá de nuevo.");
     }
   }
 
