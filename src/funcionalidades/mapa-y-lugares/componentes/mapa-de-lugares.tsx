@@ -10,6 +10,7 @@ import {
 } from "../constantes/centro-de-colon";
 import type { LugarConDistancia } from "../modelos/lugar-con-distancia";
 import { convertirCoordenadasParaElMapa } from "../utilidades/convertir-coordenadas-para-el-mapa";
+import { estaCercaDeColon } from "../utilidades/esta-cerca-de-colon";
 import { MarcadorDeLugar } from "./marcador-de-lugar";
 
 const DURACION_DEL_DESPLAZAMIENTO_EN_MILISEGUNDOS = 500;
@@ -58,7 +59,7 @@ export function MapaDeLugares({
   useEffect(() => {
     if (ubicacionDelUsuario === null || yaSeCentroEnElUsuario.current) return;
     yaSeCentroEnElUsuario.current = true;
-    centrarEn(ubicacionDelUsuario);
+    if (estaCercaDeColon(ubicacionDelUsuario)) centrarEn(ubicacionDelUsuario);
   }, [ubicacionDelUsuario]);
 
   useEffect(() => {
