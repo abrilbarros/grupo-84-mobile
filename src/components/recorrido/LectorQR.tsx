@@ -1,11 +1,14 @@
+
 import { useRef, useState, useEffect } from "react";
 
-import { Alert, Button, StyleSheet } from "react-native";
+import { Alert, StyleSheet } from "react-native";
 
 import { CameraView, useCameraPermissions } from "expo-camera";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Spacing } from "@/constants/theme";
+import { BotonRecorrido } from "@/components/ui/botones-recorrido";
 
 import { obtenerLugarPorQr } from "@/servicios/recorrido";
 import type { Lugar } from "@/tipos/recorrido";
@@ -87,8 +90,10 @@ export function LectorQR({ onLugarEncontrado, onCancelar }: Props) {
 
   if (!permisoCamara || !permisoCamara.granted) {
     return (
-      <ThemedView style={styles.contenedor}>
-        <ThemedText>Solicitando permiso para usar la cámara...</ThemedText>
+      <ThemedView style={styles.contenedorPermiso}>
+        <ThemedText>
+          Solicitando permiso para usar la cámara...
+        </ThemedText>
       </ThemedView>
     );
   }
@@ -119,7 +124,12 @@ export function LectorQR({ onLugarEncontrado, onCancelar }: Props) {
             : "Apuntá la cámara al código QR"}
         </ThemedText>
 
-        <Button title="Cancelar" onPress={onCancelar} />
+        <BotonRecorrido
+          titulo="Cancelar escaneo"
+          icono="close-outline"
+          variante="contorno"
+          onPress={onCancelar}
+        />
       </ThemedView>
     </ThemedView>
   );
@@ -129,12 +139,18 @@ const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
   },
+  contenedorPermiso: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.three,
+  },
   camara: {
     flex: 1,
   },
   controles: {
     alignItems: "center",
-    padding: 15,
-    gap: 10,
+    padding: Spacing.three,
+    gap: Spacing.two,
   },
 });

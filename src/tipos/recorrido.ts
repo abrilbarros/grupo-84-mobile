@@ -1,6 +1,9 @@
 export type Categoria = {
   id: string;
   nombre: string;
+  icono: string;
+  color: string;
+  orden: number;
 };
 
 export type Lugar = {

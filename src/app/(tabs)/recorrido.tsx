@@ -1,20 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-import { StyleSheet, Button, Modal } from "react-native";
+import { StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
 import { useSesion } from "@/contextos/sesion";
 import { FormularioVisita } from "@/components/recorrido/FormularioVisita";
-
 import { LectorQR } from "@/components/recorrido/LectorQR";
-import type { Lugar } from "@/tipos/recorrido";
+import { ListaVisitas } from "@/components/ui/ListaVisitas";
+
+import type { Lugar, Categoria } from "@/tipos/recorrido";
+import type { Visita } from "@/tipos/visita";
 
 import * as Location from "expo-location";
-import { Alert } from "react-native";
 
-import { obtenerLugaresCercanos } from "@/servicios/recorrido";
+import { BotonRecorrido } from "@/components/ui/botones-recorrido";
+
+import Ionicons from "@react-native-vector-icons/ionicons";
+import { useTheme } from "@/hooks/use-theme";
+
+import {
+  obtenerLugaresCercanos,
+  obtenerMisVisitas,
+  obtenerLugares,
+  obtenerCategorias,
+} from "@/servicios/recorrido";
 
 export default function RecorridoScreen() {
   const { sesion } = useSesion();
@@ -23,9 +34,56 @@ export default function RecorridoScreen() {
   const [lugarQR, setLugarQR] = useState<Lugar | null>(null);
   const [lugarGPS, setLugarGPS] = useState<Lugar | null>(null);
   const [buscandoGPS, setBuscandoGPS] = useState(false);
+  const [visitas, setVisitas] = useState<Visita[]>([]);
+  const [lugares, setLugares] = useState<Lugar[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [cargandoVisitas, setCargandoVisitas] = useState(true);
+  const colores = useTheme();
+
+  useEffect(() => {
+    if (!sesion) return;
+
+    const cargarDatos = async () => {
+      try {
+        setCargandoVisitas(true);
+
+        const [visitasObtenidas, lugaresObtenidos, categoriasObtenidas] =
+          await Promise.all([
+            obtenerMisVisitas(sesion.token),
+            obtenerLugares(),
+            obtenerCategorias(),
+          ]);
+
+        setVisitas(visitasObtenidas);
+        setLugares(lugaresObtenidos);
+        setCategorias(categoriasObtenidas);
+      } catch (error) {
+        console.error("Error al cargar el recorrido:", error);
+        Alert.alert(
+          "Error",
+          "No pudimos cargar tus visitas. Intentá nuevamente.",
+        );
+      } finally {
+        setCargandoVisitas(false);
+      }
+    };
+
+    cargarDatos();
+  }, [sesion]);
+
+  async function actualizarVisitas(token: string) {
+    try {
+      const visitasActualizadas = await obtenerMisVisitas(token);
+      setVisitas(visitasActualizadas);
+    } catch (error) {
+      console.error("Error al actualizar las visitas:", error);
+      Alert.alert("Error", "No pudimos actualizar tu recorrido.");
+    }
+  }
 
   const buscarLugarPorGPS = async () => {
     try {
+      visitas.length === 0;
       setBuscandoGPS(true);
 
       // 1. Solicitar permiso para acceder a la ubicación
@@ -114,6 +172,28 @@ export default function RecorridoScreen() {
       </ThemedView>
     );
   }
+  if (buscandoGPS) {
+    return (
+      <ThemedView style={styles.estadoBusqueda}>
+        <ThemedView
+          style={[styles.iconoBusqueda, { backgroundColor: colores.secondary }]}
+        >
+          <Ionicons name="navigate-outline" size={38} color={colores.primary} />
+        </ThemedView>
+
+        <ThemedText type="subtitle" style={styles.tituloBusqueda}>Buscando lugares cercanos...</ThemedText>
+
+        <ThemedText
+          style={[styles.descripcionBusqueda, { color: colores.textSecondary }]}
+        >
+          Estamos buscando lugares cerca de tu ubicación. Esto puede tardar unos
+          segundos.
+        </ThemedText>
+
+        <ActivityIndicator size="large" color={colores.primary} />
+      </ThemedView>
+    );
+  }
 
   if (metodoRegistro === "QR") {
     return (
@@ -136,6 +216,7 @@ export default function RecorridoScreen() {
         onCancelar={() => {
           setLugarQR(null);
           setMetodoRegistro(null);
+          actualizarVisitas(sesion.token);
         }}
       />
     );
@@ -150,6 +231,7 @@ export default function RecorridoScreen() {
         onCancelar={() => {
           setLugarGPS(null);
           setMetodoRegistro(null);
+          actualizarVisitas(sesion.token);
         }}
       />
     );
@@ -160,47 +242,129 @@ export default function RecorridoScreen() {
       <FormularioVisita
         metodo="manual"
         token={sesion.token}
-        onCancelar={() => setMetodoRegistro(null)}
+        onCancelar={() => {
+          setMetodoRegistro(null);
+          actualizarVisitas(sesion.token);
+        }}
       />
     );
   }
 
   // Pantalla principal con el botón y el modal con las 3 opciones
+
   return (
     <ThemedView style={styles.contenedor}>
-      <ThemedText>Aún no tenés visitas registradas</ThemedText>
-      <Button title="Registrar visita" onPress={() => setModalVisible(true)} />
+      <ThemedView style={styles.encabezado}>
+        <ThemedText style={styles.subtitulo}>
+          Tus lugares visitados y experiencias.
+        </ThemedText>
+      </ThemedView>
 
-      <Modal visible={modalVisible} transparent={true} animationType="slide">
-        <ThemedView style={styles.contenedor}>
-          <ThemedText>Elegí un método de registro</ThemedText>
+      <ThemedView style={styles.contenido}>
+        {cargandoVisitas ? (
+          <ThemedText>Cargando tus visitas...</ThemedText>
+        ) : visitas.length === 0 ? (
+          <ThemedView style={styles.estadoVacio}>
+            <ThemedView
+              style={[
+                styles.iconoVacio,
+                { backgroundColor: colores.secondary },
+              ]}
+            >
+              <Ionicons name="map-outline" size={38} color={colores.primary} />
+            </ThemedView>
 
-          <Button
-            title="Escanear QR"
-            onPress={() => {
-              setMetodoRegistro("QR");
-              setModalVisible(false);
-            }}
+            <ThemedText type="subtitle" style={styles.tituloVacio}>
+              ¡Tu recorrido comienza acá!
+            </ThemedText>
+            <ThemedText
+              style={[
+                styles.descripcionVacia,
+                { color: colores.textSecondary },
+              ]}
+            >
+              Aún no tenés visitas registradas. Explorá lugares y comenzá a
+              guardar tus experiencias.
+            </ThemedText>
+          </ThemedView>
+        ) : (
+          <ListaVisitas
+            visitas={visitas}
+            lugares={lugares}
+            categorias={categorias}
           />
+        )}
+      </ThemedView>
 
-          <Button
-            title={buscandoGPS ? "Buscando ubicación..." : "Usar GPS"}
-            disabled={buscandoGPS}
-            onPress={() => {
-              setModalVisible(false);
-              buscarLugarPorGPS();
-            }}
-          />
+      <ThemedView style={styles.pie}>
+        <BotonRecorrido
+          titulo="Registrar visita"
+          icono="add-circle-outline"
+          onPress={() => setModalVisible(true)}
+        />
+      </ThemedView>
 
-          <Button
-            title="Carga Manual"
-            onPress={() => {
-              setMetodoRegistro("manual");
-              setModalVisible(false);
-            }}
-          />
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <ThemedView style={styles.modalFondo}>
+          <ThemedView style={styles.modalTarjeta}>
+            <ThemedText type="subtitle" style={styles.modalTitulo}>
+              Elegí un método de registro
+            </ThemedText>
 
-          <Button title="Cerrar" onPress={() => setModalVisible(false)} />
+            <ThemedText
+              style={[
+                styles.modalDescripcion,
+                { color: colores.textSecondary },
+              ]}
+            >
+              ¿Cómo querés registrar tu visita?
+            </ThemedText>
+
+            <ThemedView style={styles.opcionesModal}>
+              <BotonRecorrido
+                titulo="Escanear QR"
+                icono="qr-code-outline"
+                variante="secundario"
+                onPress={() => {
+                  setMetodoRegistro("QR");
+                  setModalVisible(false);
+                }}
+              />
+
+              <BotonRecorrido
+                titulo={buscandoGPS ? "Buscando ubicación..." : "Usar GPS"}
+                icono="navigate-outline"
+                variante="secundario"
+                disabled={buscandoGPS}
+                onPress={() => {
+                  setModalVisible(false);
+                  buscarLugarPorGPS();
+                }}
+              />
+
+              <BotonRecorrido
+                titulo="Carga manual"
+                icono="create-outline"
+                variante="secundario"
+                onPress={() => {
+                  setMetodoRegistro("manual");
+                  setModalVisible(false);
+                }}
+              />
+            </ThemedView>
+
+            <BotonRecorrido
+              titulo="Cerrar"
+              icono="close-outline"
+              variante="contorno"
+              onPress={() => setModalVisible(false)}
+            />
+          </ThemedView>
         </ThemedView>
       </Modal>
     </ThemedView>
@@ -210,7 +374,94 @@ export default function RecorridoScreen() {
 const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
+  },
+  encabezado: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+    gap: 4,
+  },
+  contenido: {
+    flex: 1,
+  },
+  pie: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
+  },
+  subtitulo: {
+    fontSize: 17,
+    fontWeight: "500",
+  },
+  estadoVacio: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  iconoVacio: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  descripcionVacia: {
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 23,
+  },
+  tituloVacio: {
+    width: "100%",
+    textAlign: "center",
+  },
+
+  modalFondo: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalTarjeta: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: 22,
+    padding: 24,
+    gap: 18,
+  },
+  modalTitulo: {
+    textAlign: "center",
+  },
+  modalDescripcion: {
+    fontSize: 14,
+    textAlign: "center",
+  },
+  opcionesModal: {
+    gap: 12,
+  },
+  estadoBusqueda: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 20,
+  },
+  tituloBusqueda: {
+    width: "100%",
+    textAlign: "center",
+  },
+  iconoBusqueda: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  descripcionBusqueda: {
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 23,
   },
 });

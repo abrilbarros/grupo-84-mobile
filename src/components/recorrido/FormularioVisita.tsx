@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
 
+import { useState, useEffect } from "react";
 import {
-  Button,
   ScrollView,
   TextInput,
-  useColorScheme,
   StyleSheet,
 } from "react-native";
+import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
+import { Spacing } from "@/constants/theme";
 
 import {
   obtenerCategorias,
@@ -26,9 +26,9 @@ import { ErrorApi } from "@/servicios/api";
 import { SelectorCategoria } from "@/components/recorrido/SelectorCategoria";
 import { SelectorLugar } from "@/components/recorrido/SelectorLugar";
 import { CamaraVisita } from "@/components/recorrido/CamaraVisita";
-import type { Categoria, Lugar } from "@/tipos/recorrido";
+import { BotonRecorrido } from "@/components/ui/botones-recorrido";
 
-//FORMULARIO
+import type { Categoria, Lugar } from "@/tipos/recorrido";
 
 export function FormularioVisita({
   metodo,
@@ -41,6 +41,8 @@ export function FormularioVisita({
   onCancelar: () => void;
   lugarInicial?: Lugar;
 }) {
+  const colores = useTheme();
+
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] =
     useState<Categoria | null>(null);
@@ -50,10 +52,8 @@ export function FormularioVisita({
   );
   const [fechaHora, setFechaHora] = useState(new Date());
   const [nota, setNota] = useState("");
-  const theme = useColorScheme() === "dark" ? Colors.dark : Colors.light;
   const [fotoUri, setFotoUri] = useState<string | null>(null);
 
-  // CATEGORIAS
   useEffect(() => {
     async function cargarCategorias() {
       try {
@@ -67,7 +67,6 @@ export function FormularioVisita({
     cargarCategorias();
   }, []);
 
-  // PRECARGAR LUGAR DESDE QR
   useEffect(() => {
     if (!lugarInicial || categorias.length === 0) return;
 
@@ -85,7 +84,6 @@ export function FormularioVisita({
     setLugares([lugarInicial]);
   }, [lugarInicial, categorias]);
 
-  //LUGARES
   useEffect(() => {
     async function cargarLugares() {
       if (!categoriaSeleccionada) return;
@@ -101,7 +99,6 @@ export function FormularioVisita({
     cargarLugares();
   }, [categoriaSeleccionada]);
 
-  // guardar la visita
   async function guardarVisita() {
     if (!lugarSeleccionado) {
       alert("Seleccioná un lugar antes de guardar la visita.");
@@ -121,7 +118,6 @@ export function FormularioVisita({
 
       if (fotoUri) {
         const urlFoto = await subirFotografia(token, fotoUri);
-
         await actualizarFotoVisita(token, visita.id, urlFoto);
 
         console.log("Fotografía subida:", urlFoto);
@@ -141,90 +137,304 @@ export function FormularioVisita({
   }
 
   return (
-    <ScrollView>
-      <ThemedView style={styles.contenedor}>
-        <ThemedText type="title">Registrar Visita</ThemedText>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.contenidoScroll}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <ThemedView
+        style={[
+          styles.contenedor,
+          { backgroundColor: colores.background },
+        ]}
+      >
+        <ThemedView style={[styles.encabezado, styles.contenedorInterno]}>
+          <ThemedView
+            style={[
+              styles.iconoEncabezado,
+              { backgroundColor: colores.secondary },
+            ]}
+          >
+            <Ionicons
+              name="location-outline"
+              size={28}
+              color={colores.primary}
+            />
+          </ThemedView>
 
-        {/*CAMPO CATEGORIA*/}
+          <ThemedText type="title">
+            Registrar visita
+          </ThemedText>
 
-        <SelectorCategoria
-          categorias={categorias}
-          categoriaSeleccionada={categoriaSeleccionada}
-          onSeleccionar={(categoria) => {
-            setCategoriaSeleccionada(categoria);
-            setLugarSeleccionado(null);
-            setLugares([]);
-          }}
-        />
-
-        {/*CAMPO LUGAR*/}
-
-        <SelectorLugar
-          lugares={lugares}
-          lugarSeleccionado={lugarSeleccionado}
-          categoriaSeleccionada={categoriaSeleccionada !== null}
-          onSeleccionar={(lugar) => {
-            setLugarSeleccionado(lugar);
-          }}
-        />
-
-        {/* campo descripcion */}
-        <ThemedView style={styles.input}>
-          <ThemedText>
-            {lugarSeleccionado
-              ? lugarSeleccionado.descripcion
-              : "Descripción del lugar"}
+          <ThemedText
+            style={[
+              styles.subtitulo,
+              { color: colores.textSecondary },
+            ]}
+          >
+            Completá los datos para guardar tu experiencia.
           </ThemedText>
         </ThemedView>
 
-        {/* Campo fecha y hora */}
-        <ThemedView style={styles.input}>
-          <ThemedText>{fechaHora.toLocaleString("es-AR")}</ThemedText>
-        </ThemedView>
-
-        {/* Campo nota */}
-        <TextInput
+        <ThemedView
           style={[
-            styles.input,
+            styles.tarjeta,
             {
-              color: theme.text,
+              backgroundColor: colores.backgroundElement,
+              borderColor: colores.backgroundSelected,
             },
           ]}
-          placeholder="Dejá una nota (opcional)"
-          placeholderTextColor={theme.textSecondary}
-          value={nota}
-          onChangeText={setNota}
-          multiline
-        />
+        >
+          <ThemedText type="subtitle">
+            Información del lugar
+          </ThemedText>
 
-        {/*CAMPO CAMARA*/}
+          <ThemedView style={[styles.campo, styles.contenedorInterno]}>
+            <ThemedText type="smallBold">
+              Categoría
+            </ThemedText>
 
-        <CamaraVisita
-          fotoUri={fotoUri}
-          onFotoTomada={(uri) => setFotoUri(uri)}
-        />
+            <SelectorCategoria
+              categorias={categorias}
+              categoriaSeleccionada={categoriaSeleccionada}
+              onSeleccionar={(categoria) => {
+                setCategoriaSeleccionada(categoria);
+                setLugarSeleccionado(null);
+                setLugares([]);
+              }}
+            />
+          </ThemedView>
 
-        <Button title="Guardar Visita" onPress={guardarVisita} />
+          <ThemedView style={[styles.campo, styles.contenedorInterno]}>
+            <ThemedText type="smallBold">
+              Lugar
+            </ThemedText>
 
-        <Button title="Cancelar y volver" onPress={onCancelar} />
+            <SelectorLugar
+              lugares={lugares}
+              lugarSeleccionado={lugarSeleccionado}
+              categoriaSeleccionada={categoriaSeleccionada !== null}
+              onSeleccionar={(lugar) => {
+                setLugarSeleccionado(lugar);
+              }}
+            />
+          </ThemedView>
+
+          <ThemedView
+            style={[
+              styles.informacion,
+              { backgroundColor: colores.backgroundSelected },
+            ]}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={20}
+              color={colores.primary}
+            />
+
+            <ThemedView
+              style={[styles.textoInformacion, styles.contenedorInterno]}
+            >
+              <ThemedText type="smallBold">
+                Descripción
+              </ThemedText>
+
+              <ThemedText
+                style={{ color: colores.textSecondary }}
+              >
+                {lugarSeleccionado
+                  ? lugarSeleccionado.descripcion
+                  : "La descripción del lugar aparecerá cuando lo selecciones."}
+              </ThemedText>
+            </ThemedView>
+          </ThemedView>
+        </ThemedView>
+
+        <ThemedView
+          style={[
+            styles.tarjeta,
+            {
+              backgroundColor: colores.backgroundElement,
+              borderColor: colores.backgroundSelected,
+            },
+          ]}
+        >
+          <ThemedText type="subtitle">
+            Detalles de la visita
+          </ThemedText>
+
+          <ThemedView
+            style={[
+              styles.fecha,
+              { backgroundColor: colores.backgroundSelected },
+            ]}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={21}
+              color={colores.primary}
+            />
+
+            <ThemedView
+              style={[styles.textoFecha, styles.contenedorInterno]}
+            >
+              <ThemedText type="smallBold">
+                Fecha y hora
+              </ThemedText>
+
+              <ThemedText
+                style={{ color: colores.textSecondary }}
+              >
+                {fechaHora.toLocaleString("es-AR")}
+              </ThemedText>
+            </ThemedView>
+          </ThemedView>
+
+          <ThemedView style={[styles.campo, styles.contenedorInterno]}>
+            <ThemedText type="smallBold">
+              Tu experiencia
+            </ThemedText>
+
+            <TextInput
+              style={[
+                styles.inputNota,
+                {
+                  color: colores.text,
+                  backgroundColor: colores.background,
+                  borderColor: colores.backgroundSelected,
+                },
+              ]}
+              placeholder="Dejá una nota sobre tu visita (opcional)"
+              placeholderTextColor={colores.textSecondary}
+              value={nota}
+              onChangeText={setNota}
+              multiline
+              textAlignVertical="top"
+            />
+          </ThemedView>
+        </ThemedView>
+
+        <ThemedView
+          style={[
+            styles.tarjeta,
+            {
+              backgroundColor: colores.backgroundElement,
+              borderColor: colores.backgroundSelected,
+            },
+          ]}
+        >
+          <ThemedText type="subtitle">
+            Fotografía
+          </ThemedText>
+
+          <ThemedText
+            style={[
+              styles.subtituloFoto,
+              { color: colores.textSecondary },
+            ]}
+          >
+            Podés adjuntar una foto para recordar este momento.
+          </ThemedText>
+
+          <CamaraVisita
+            fotoUri={fotoUri}
+            onFotoTomada={(uri) => setFotoUri(uri)}
+          />
+        </ThemedView>
+
+        <ThemedView style={[styles.botones, styles.contenedorInterno]}>
+          <BotonRecorrido
+            titulo="Guardar visita"
+            icono="checkmark-circle-outline"
+            onPress={guardarVisita}
+          />
+
+          <BotonRecorrido
+            titulo="Cancelar y volver"
+            icono="arrow-back-outline"
+            variante="contorno"
+            onPress={onCancelar}
+          />
+        </ThemedView>
       </ThemedView>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  contenidoScroll: {
+    flexGrow: 1,
+    paddingBottom: Spacing.four,
+  },
   contenedor: {
     flex: 1,
+    padding: Spacing.three,
+    gap: Spacing.three,
+  },
+  contenedorInterno: {
+    backgroundColor: "transparent",
+  },
+  encabezado: {
+    alignItems: "center",
+    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+  },
+  iconoEncabezado: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: Spacing.one,
   },
-  input: {
+  subtitulo: {
+    fontSize: 14,
+    textAlign: "center",
+  },
+  tarjeta: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    width: "80%",
-    borderRadius: 8,
-    marginVertical: 10,
-    color: "#000",
+    borderRadius: 18,
+    padding: Spacing.three,
+    gap: Spacing.three,
+  },
+  campo: {
+    gap: Spacing.two,
+  },
+  informacion: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: 12,
+  },
+  textoInformacion: {
+    flex: 1,
+    gap: Spacing.one,
+  },
+  fecha: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: 12,
+  },
+  textoFecha: {
+    flex: 1,
+    gap: Spacing.one,
+  },
+  inputNota: {
+    minHeight: 110,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: Spacing.three,
+    fontSize: 15,
+  },
+  subtituloFoto: {
+    fontSize: 14,
+  },
+  botones: {
+    gap: Spacing.two,
+    paddingTop: Spacing.one,
   },
 });
