@@ -9,7 +9,7 @@ import { LogBox } from "react-native";
 
 LogBox.ignoreLogs(["expo-notifications"]);
 
-// Sin ancla, la primera pantalla declarada abajo ("lugares") pasa a ser la ruta inicial.
+// Conserva las pestañas como pantalla base al abrir rutas secundarias, como /lugares.
 export const unstable_settings = { anchor: "(tabs)" };
 
 export default function RootLayout() {
@@ -32,6 +32,7 @@ export default function RootLayout() {
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <SesionProvider>
         <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
           {/* Header fijo desde el primer frame: activarlo desde la pantalla deja el contenido bajo el notch en iOS. */}
           <Stack.Screen
             name="lugares"
