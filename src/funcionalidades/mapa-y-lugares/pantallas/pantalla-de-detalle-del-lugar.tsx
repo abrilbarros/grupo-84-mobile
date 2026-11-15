@@ -50,7 +50,6 @@ export function PantallaDeDetalleDelLugar() {
   const encabezado = (
     <Stack.Screen
       options={{
-        headerShown: true,
         title: lugar?.nombre ?? "Lugar",
         headerRight: botonDeFavorito,
       }}

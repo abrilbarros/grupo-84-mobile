@@ -28,7 +28,17 @@ export default function RootLayout() {
     <ThemeProvider value={tema}>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <SesionProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* Header fijo desde el primer frame: activarlo desde la pantalla deja el contenido bajo el notch en iOS. */}
+          <Stack.Screen
+            name="lugares"
+            options={{ headerShown: true, title: "Todos los lugares" }}
+          />
+          <Stack.Screen
+            name="lugares/[id]"
+            options={{ headerShown: true, title: "Lugar" }}
+          />
+        </Stack>
       </SesionProvider>
     </ThemeProvider>
   );

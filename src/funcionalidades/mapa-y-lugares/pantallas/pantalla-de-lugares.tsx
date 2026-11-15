@@ -1,4 +1,3 @@
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -45,7 +44,6 @@ export function PantallaDeLugares() {
 
   return (
     <ThemedView style={estilos.pantalla}>
-      <Stack.Screen options={{ headerShown: true, title: "Todos los lugares" }} />
       <View style={estilos.controles}>
         <CampoDeBusqueda
           valor={filtros.textoDeBusqueda}
