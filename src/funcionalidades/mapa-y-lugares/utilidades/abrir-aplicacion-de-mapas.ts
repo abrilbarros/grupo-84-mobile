@@ -15,6 +15,10 @@ function construirDireccionWeb({ latitud, longitud }: Coordenadas): string {
 export async function abrirAplicacionDeMapas(
   destino: Coordenadas,
 ): Promise<void> {
+  if (Platform.OS === "web") {
+    await Linking.openURL(construirDireccionWeb(destino));
+    return;
+  }
   try {
     await Linking.openURL(construirDireccionNativa(destino));
   } catch {

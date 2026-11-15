@@ -16,6 +16,7 @@ import {
   ZOOM_INICIAL_DEL_MAPA,
   ZOOM_MAXIMO_DEL_MAPA,
 } from "../constantes/configuracion-del-mapa-web";
+import { estaCercaDeColon } from "../utilidades/esta-cerca-de-colon";
 import type {
   ControladorDelMapa,
   PropiedadesDeMapaDeLugares,
@@ -135,7 +136,7 @@ export function MapaDeLugares({
   useEffect(() => {
     if (ubicacionDelUsuario === null || yaSeCentroEnElUsuario.current) return;
     yaSeCentroEnElUsuario.current = true;
-    centrarEn(ubicacionDelUsuario);
+    if (estaCercaDeColon(ubicacionDelUsuario)) centrarEn(ubicacionDelUsuario);
   }, [ubicacionDelUsuario]);
 
   useEffect(() => {
