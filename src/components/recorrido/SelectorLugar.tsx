@@ -1,11 +1,6 @@
-
 import { useState } from "react";
 
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+import { Modal, Pressable, StyleSheet } from "react-native";
 
 import Ionicons from "@react-native-vector-icons/ionicons";
 
@@ -21,6 +16,7 @@ type Props = {
   lugares: Lugar[];
   lugarSeleccionado: Lugar | null;
   categoriaSeleccionada: boolean;
+  cargando: boolean;
   onSeleccionar: (lugar: Lugar) => void;
 };
 
@@ -28,6 +24,7 @@ export function SelectorLugar({
   lugares,
   lugarSeleccionado,
   categoriaSeleccionada,
+  cargando,
   onSeleccionar,
 }: Props) {
   const colores = useTheme();
@@ -47,19 +44,13 @@ export function SelectorLugar({
         onPress={() => setModalVisible(true)}
         disabled={!categoriaSeleccionada}
       >
-        <Ionicons
-          name="location-outline"
-          size={20}
-          color={colores.primary}
-        />
+        <Ionicons name="location-outline" size={20} color={colores.primary} />
 
         <ThemedText
           style={[
             styles.textoInput,
             {
-              color: lugarSeleccionado
-                ? colores.text
-                : colores.textSecondary,
+              color: lugarSeleccionado ? colores.text : colores.textSecondary,
             },
           ]}
         >
@@ -70,11 +61,7 @@ export function SelectorLugar({
               : "Primero seleccioná una categoría"}
         </ThemedText>
 
-        <Ionicons
-          name="chevron-down"
-          size={20}
-          color={colores.textSecondary}
-        />
+        <Ionicons name="chevron-down" size={20} color={colores.textSecondary} />
       </Pressable>
 
       <Modal
@@ -94,9 +81,7 @@ export function SelectorLugar({
             ]}
           >
             <ThemedView style={styles.encabezadoModal}>
-              <ThemedText type="subtitle">
-                Seleccioná un lugar
-              </ThemedText>
+              <ThemedText type="subtitle">Seleccioná un lugar</ThemedText>
 
               <ThemedText
                 style={[
@@ -109,10 +94,18 @@ export function SelectorLugar({
             </ThemedView>
 
             <ThemedView style={styles.listaLugares}>
-              {lugares.length > 0 ? (
+              {cargando ? (
+                <ThemedText
+                  style={[
+                    styles.mensajeVacio,
+                    { color: colores.textSecondary },
+                  ]}
+                >
+                  Cargando lugares...
+                </ThemedText>
+              ) : lugares.length > 0 ? (
                 lugares.map((lugar) => {
-                  const seleccionado =
-                    lugarSeleccionado?.id === lugar.id;
+                  const seleccionado = lugarSeleccionado?.id === lugar.id;
 
                   return (
                     <Pressable

@@ -14,6 +14,9 @@ import {
 } from "react";
 import { Platform } from "react-native";
 
+import * as Network from "expo-network";
+import { sincronizarVisitas } from "@/servicios/sincronizacion";
+
 const CLAVE_TOKEN = "mi-ciudad.token";
 const CLAVE_BIOMETRIA = "mi-ciudad.biometria";
 const CLAVE_USUARIO_SESION = "mi-ciudad.usuario-sesion";
@@ -192,6 +195,36 @@ export function SesionProvider({ children }: { children: ReactNode }) {
       consulta.current?.abort();
     };
   }, [restaurarSesion]);
+  useEffect(() => {
+    if (!sesion || restaurando) return;
+    const token = sesion.token;
+
+    let sincronizacionEnCurso = false;
+
+    async function intentarSincronizar() {
+      if (sincronizacionEnCurso) return;
+
+      sincronizacionEnCurso = true;
+
+      try {
+        await sincronizarVisitas(token);
+      } catch (error) {
+        console.error("Error al sincronizar visitas pendientes:", error);
+      } finally {
+        sincronizacionEnCurso = false;
+      }
+    }
+
+    void intentarSincronizar();
+
+    const suscripcion = Network.addNetworkStateListener((estado) => {
+      if (estado.isConnected === true && estado.isInternetReachable !== false) {
+        void intentarSincronizar();
+      }
+    });
+
+    return () => suscripcion.remove();
+  }, [sesion, restaurando]);
 
   async function activarBiometria() {
     if (!sesion) return;

@@ -3,12 +3,22 @@ import { solicitar } from "./api";
 import { File } from "expo-file-system";
 import type { Lugar } from "@/tipos/recorrido";
 
+import { ErrorConexion } from "./api";
+
+import {
+  guardarCategoriasLocales,
+  obtenerCategoriasLocales,
+  guardarLugaresLocales,
+  obtenerLugaresLocales,
+} from "./recorrido-local";
+
 export async function registrarVisita(
   token: string,
   lugarId: string,
   origen: OrigenVisita,
   nota: string | null,
   fotoUri: string | null,
+  fechaHora: string = new Date().toISOString(),
 ): Promise<Visita> {
   const respuesta = await solicitar<{
     datos: Visita;
@@ -22,7 +32,7 @@ export async function registrarVisita(
     body: JSON.stringify({
       lugarId,
       origen,
-      fechaHora: new Date().toISOString(),
+      fechaHora,
       nota,
       fotoUri: null,
     }),
@@ -75,19 +85,55 @@ export async function actualizarFotoVisita(
 }
 
 export async function obtenerCategorias() {
-  const respuesta = await solicitar<any>("/categorias");
-  return respuesta.datos || respuesta;
+  try {
+    const respuesta = await solicitar<any>("/categorias");
+    const categorias = respuesta.datos || respuesta;
+
+    await guardarCategoriasLocales(categorias);
+
+    return categorias;
+  } catch (error) {
+    if (error instanceof ErrorConexion) {
+      const categoriasLocales = await obtenerCategoriasLocales();
+
+      if (categoriasLocales.length > 0) {
+        return categoriasLocales;
+      }
+    }
+
+    throw error;
+  }
 }
 
 export async function obtenerLugares(categoriaId?: string) {
-  const ruta = categoriaId ? `/lugares?categoriaId=${categoriaId}` : "/lugares";
-  const respuesta = await solicitar<any>(ruta);
-  return respuesta.datos || respuesta;
+  try {
+    const parametros = new URLSearchParams({
+      porPagina: "500",
+    });
+
+    if (categoriaId) {
+      parametros.append("categoriaId", categoriaId);
+    }
+
+    const respuesta = await solicitar<any>(`/lugares?${parametros.toString()}`);
+
+    const lugares = respuesta.datos || respuesta;
+
+    if (!categoriaId) {
+      await guardarLugaresLocales(lugares);
+    }
+
+    return lugares;
+  } catch (error) {
+    if (error instanceof ErrorConexion) {
+      return await obtenerLugaresLocales(categoriaId);
+    }
+
+    throw error;
+  }
 }
 
-export async function obtenerLugarPorQr(
-  codigo: string,
-): Promise<Lugar> {
+export async function obtenerLugarPorQr(codigo: string): Promise<Lugar> {
   const respuesta = await solicitar<{
     datos: Lugar;
     meta: null;
@@ -116,9 +162,7 @@ export async function obtenerLugaresCercanos(
   return respuesta.datos;
 }
 
-export async function obtenerMisVisitas(
-  token: string,
-): Promise<Visita[]> {
+export async function obtenerMisVisitas(token: string): Promise<Visita[]> {
   const parametros = new URLSearchParams({
     porPagina: "500",
   });

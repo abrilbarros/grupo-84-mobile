@@ -1,11 +1,6 @@
-
 import { useState } from "react";
 
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+import { Modal, Pressable, StyleSheet } from "react-native";
 
 import Ionicons from "@react-native-vector-icons/ionicons";
 
@@ -20,12 +15,14 @@ import type { Categoria } from "@/tipos/recorrido";
 type Props = {
   categorias: Categoria[];
   categoriaSeleccionada: Categoria | null;
+  cargando: boolean;
   onSeleccionar: (categoria: Categoria) => void;
 };
 
 export function SelectorCategoria({
   categorias,
   categoriaSeleccionada,
+  cargando,
   onSeleccionar,
 }: Props) {
   const colores = useTheme();
@@ -43,11 +40,7 @@ export function SelectorCategoria({
         ]}
         onPress={() => setModalVisible(true)}
       >
-        <Ionicons
-          name="list-outline"
-          size={20}
-          color={colores.primary}
-        />
+        <Ionicons name="list-outline" size={20} color={colores.primary} />
 
         <ThemedText
           style={[
@@ -64,11 +57,7 @@ export function SelectorCategoria({
             : "Seleccioná una categoría"}
         </ThemedText>
 
-        <Ionicons
-          name="chevron-down"
-          size={20}
-          color={colores.textSecondary}
-        />
+        <Ionicons name="chevron-down" size={20} color={colores.textSecondary} />
       </Pressable>
 
       <Modal
@@ -88,9 +77,7 @@ export function SelectorCategoria({
             ]}
           >
             <ThemedView style={styles.encabezadoModal}>
-              <ThemedText type="subtitle">
-                Seleccioná una categoría
-              </ThemedText>
+              <ThemedText type="subtitle">Seleccioná una categoría</ThemedText>
 
               <ThemedText
                 style={[
@@ -103,52 +90,72 @@ export function SelectorCategoria({
             </ThemedView>
 
             <ThemedView style={styles.listaCategorias}>
-              {categorias.map((categoria) => {
-                const seleccionada =
-                  categoriaSeleccionada?.id === categoria.id;
+              {cargando ? (
+                <ThemedText
+                  style={[
+                    styles.mensajeVacio,
+                    { color: colores.textSecondary },
+                  ]}
+                >
+                  Cargando categorías...
+                </ThemedText>
+              ) : categorias.length > 0 ? (
+                categorias.map((categoria) => {
+                  const seleccionada =
+                    categoriaSeleccionada?.id === categoria.id;
 
-                return (
-                  <Pressable
-                    key={categoria.id}
-                    onPress={() => {
-                      onSeleccionar(categoria);
-                      setModalVisible(false);
-                    }}
-                    style={[
-                      styles.opcionCategoria,
-                      {
-                        backgroundColor: seleccionada
-                          ? colores.secondary
-                          : colores.background,
-                        borderColor: seleccionada
-                          ? colores.primary
-                          : colores.backgroundSelected,
-                      },
-                    ]}
-                  >
-                    <ThemedText
+                  return (
+                    <Pressable
+                      key={categoria.id}
+                      onPress={() => {
+                        onSeleccionar(categoria);
+                        setModalVisible(false);
+                      }}
                       style={[
-                        styles.textoCategoria,
+                        styles.opcionCategoria,
                         {
-                          color: seleccionada
-                            ? colores.textContent
-                            : colores.text,
+                          backgroundColor: seleccionada
+                            ? colores.secondary
+                            : colores.background,
+                          borderColor: seleccionada
+                            ? colores.primary
+                            : colores.backgroundSelected,
                         },
                       ]}
                     >
-                      {categoria.nombre}
-                    </ThemedText>
+                      <ThemedText
+                        style={[
+                          styles.textoCategoria,
+                          {
+                            color: seleccionada
+                              ? colores.textContent
+                              : colores.text,
+                          },
+                        ]}
+                      >
+                        {categoria.nombre}
+                      </ThemedText>
 
-                    {seleccionada && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={21}
-                        color={colores.primary}
-                      />
-                    )}
-                  </Pressable>
-                );
-              })}
+                      {seleccionada && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={21}
+                          color={colores.primary}
+                        />
+                      )}
+                    </Pressable>
+                  );
+                })
+              ) : (
+                <ThemedText
+                  style={[
+                    styles.mensajeVacio,
+                    { color: colores.textSecondary },
+                  ]}
+                >
+                  No hay categorías disponibles.
+                </ThemedText>
+              )}
             </ThemedView>
 
             <BotonRecorrido
@@ -220,4 +227,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
   },
+  mensajeVacio: {
+  textAlign: "center",
+  padding: Spacing.three,
+  fontSize: 14,
+},
 });

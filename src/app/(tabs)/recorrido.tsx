@@ -19,6 +19,7 @@ import { BotonRecorrido } from "@/components/ui/botones-recorrido";
 
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { useTheme } from "@/hooks/use-theme";
+import { Spacing } from "@/constants/theme";
 
 import {
   obtenerLugaresCercanos,
@@ -168,7 +169,39 @@ export default function RecorridoScreen() {
   if (!sesion) {
     return (
       <ThemedView style={styles.contenedor}>
-        <ThemedText>Inicia sesion para ver o cargar tus recorridos</ThemedText>
+        <ThemedView style={styles.estadoSinSesion}>
+          <ThemedView
+            style={[
+              styles.iconoSinSesion,
+              { backgroundColor: colores.secondary },
+            ]}
+          >
+            <Ionicons name="map-outline" size={38} color={colores.primary} />
+          </ThemedView>
+
+          <ThemedText type="subtitle" style={styles.tituloSinSesion}>
+            Tu recorrido te espera
+          </ThemedText>
+
+          <ThemedText
+            style={[
+              styles.descripcionSinSesion,
+              { color: colores.textSecondary },
+            ]}
+          >
+            Iniciá sesión para consultar tus visitas y guardar los lugares que
+            recorras.
+          </ThemedText>
+
+          <ThemedText
+            style={[
+              styles.indicacionSinSesion,
+              { color: colores.textSecondary },
+            ]}
+          >
+            Dirigite a la sección Perfil para iniciar sesión o crear una cuenta.
+          </ThemedText>
+        </ThemedView>
       </ThemedView>
     );
   }
@@ -181,7 +214,9 @@ export default function RecorridoScreen() {
           <Ionicons name="navigate-outline" size={38} color={colores.primary} />
         </ThemedView>
 
-        <ThemedText type="subtitle" style={styles.tituloBusqueda}>Buscando lugares cercanos...</ThemedText>
+        <ThemedText type="subtitle" style={styles.tituloBusqueda}>
+          Buscando lugares cercanos...
+        </ThemedText>
 
         <ThemedText
           style={[styles.descripcionBusqueda, { color: colores.textSecondary }]}
@@ -262,7 +297,17 @@ export default function RecorridoScreen() {
 
       <ThemedView style={styles.contenido}>
         {cargandoVisitas ? (
-          <ThemedText>Cargando tus visitas...</ThemedText>
+          <ThemedView style={styles.estadoCarga}>
+            <ActivityIndicator size="large" color={colores.primary} />
+
+            <ThemedText type="subtitle" style={styles.tituloCarga}>
+              Cargando tu recorrido...
+            </ThemedText>
+
+            <ThemedText style={{ color: colores.textSecondary }}>
+              Estamos buscando tus visitas.
+            </ThemedText>
+          </ThemedView>
         ) : visitas.length === 0 ? (
           <ThemedView style={styles.estadoVacio}>
             <ThemedView
@@ -277,6 +322,7 @@ export default function RecorridoScreen() {
             <ThemedText type="subtitle" style={styles.tituloVacio}>
               ¡Tu recorrido comienza acá!
             </ThemedText>
+
             <ThemedText
               style={[
                 styles.descripcionVacia,
@@ -464,4 +510,46 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 23,
   },
+  estadoSinSesion: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 18,
+  },
+  iconoSinSesion: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tituloSinSesion: {
+    width: "100%",
+    textAlign: "center",
+  },
+  descripcionSinSesion: {
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 23,
+  },
+  indicacionSinSesion: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 21,
+    fontWeight: "500",
+  },
+  estadoCarga: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "stretch",
+    padding: Spacing.four,
+    gap: Spacing.three,
+    minHeight: 220,
+  },
+  tituloCarga: {
+  width: "100%",
+  textAlign: "center",
+},
 });
