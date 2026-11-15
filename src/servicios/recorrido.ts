@@ -115,3 +115,27 @@ export async function obtenerLugaresCercanos(
 
   return respuesta.datos;
 }
+
+export async function obtenerMisVisitas(
+  token: string,
+): Promise<Visita[]> {
+  const parametros = new URLSearchParams({
+    porPagina: "500",
+  });
+
+  const respuesta = await solicitar<{
+    datos: Visita[];
+    meta: {
+      total: number;
+      pagina: number;
+      porPagina: number;
+    };
+  }>(`/yo/visitas?${parametros.toString()}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return respuesta.datos;
+}

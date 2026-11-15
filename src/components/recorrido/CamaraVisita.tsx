@@ -1,7 +1,6 @@
-import { useRef, useState } from "react";
 
+import { useRef, useState } from "react";
 import {
-  Button,
   Modal,
   StyleSheet,
 } from "react-native";
@@ -13,6 +12,9 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useTheme } from "@/hooks/use-theme";
+import { Spacing } from "@/constants/theme";
+import { BotonRecorrido } from "@/components/ui/botones-recorrido";
 
 type Props = {
   fotoUri: string | null;
@@ -23,6 +25,8 @@ export function CamaraVisita({
   fotoUri,
   onFotoTomada,
 }: Props) {
+  const colores = useTheme();
+
   const camaraRef = useRef<CameraView>(null);
 
   const [permisoCamara, solicitarPermisoCamara] =
@@ -51,38 +55,58 @@ export function CamaraVisita({
 
   return (
     <>
-      {/* Campo fotografía */}
-      <ThemedView style={styles.input}>
-        <ThemedText>
-          {fotoUri
-            ? fotoUri.split("/").pop()
-            : "No se tomo ninguna fotografía (opcional)"}
-        </ThemedText>
-      </ThemedView>
+      <ThemedView style={styles.contenedor}>
+        <ThemedView
+          style={[
+            styles.archivo,
+            {
+              backgroundColor: colores.backgroundSelected,
+            },
+          ]}
+        >
+          <ThemedText
+            style={{ color: colores.textSecondary }}
+          >
+            {fotoUri
+              ? fotoUri.split("/").pop()
+              : "No se tomó ninguna fotografía."}
+          </ThemedText>
+        </ThemedView>
 
-      <Button title="Sacar fotografía" onPress={abrirCamara} />
+        <BotonRecorrido
+          titulo={fotoUri ? "Volver a sacar fotografía" : "Sacar fotografía"}
+          icono="camera-outline"
+          variante="secundario"
+          onPress={abrirCamara}
+        />
+      </ThemedView>
 
       <Modal
         visible={camaraVisible}
         animationType="slide"
         onRequestClose={() => setCamaraVisible(false)}
       >
-        <ThemedView style={{ flex: 1 }}>
+        <ThemedView style={styles.modalCamara}>
           <CameraView
             ref={camaraRef}
-            style={{ flex: 1 }}
+            style={styles.camara}
             facing="back"
           />
 
-          <Button
-            title="Tomar fotografía"
-            onPress={sacarFotografia}
-          />
+          <ThemedView style={styles.controlesCamara}>
+            <BotonRecorrido
+              titulo="Tomar fotografía"
+              icono="camera"
+              onPress={sacarFotografia}
+            />
 
-          <Button
-            title="Cerrar cámara"
-            onPress={() => setCamaraVisible(false)}
-          />
+            <BotonRecorrido
+              titulo="Cerrar cámara"
+              icono="close-outline"
+              variante="contorno"
+              onPress={() => setCamaraVisible(false)}
+            />
+          </ThemedView>
         </ThemedView>
       </Modal>
     </>
@@ -90,13 +114,23 @@ export function CamaraVisita({
 }
 
 const styles = StyleSheet.create({
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    width: "80%",
-    borderRadius: 8,
-    marginVertical: 10,
-    color: "#000",
+  contenedor: {
+    backgroundColor: "transparent",
+    gap: Spacing.two,
+  },
+  archivo: {
+    padding: Spacing.three,
+    borderRadius: 12,
+  },
+  modalCamara: {
+    flex: 1,
+  },
+  camara: {
+    flex: 1,
+  },
+  controlesCamara: {
+    padding: Spacing.three,
+    gap: Spacing.two,
   },
 });
+
