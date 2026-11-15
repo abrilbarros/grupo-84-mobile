@@ -9,6 +9,9 @@ import { LogBox } from "react-native";
 
 LogBox.ignoreLogs(["expo-notifications"]);
 
+// Sin ancla, la primera pantalla declarada abajo ("lugares") pasa a ser la ruta inicial.
+export const unstable_settings = { anchor: "(tabs)" };
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const colores = useTheme();
