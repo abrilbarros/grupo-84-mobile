@@ -3,6 +3,7 @@ import { obtenerUsuarioActual } from "@/servicios/cuenta";
 import type { Sesion } from "@/tipos/api";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
+import { router, useNavigationContainerRef } from "expo-router";
 import {
   createContext,
   useCallback,
@@ -54,6 +55,8 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     null,
   );
   const version = useRef(0);
+  const perfilPendiente = useRef<number | null>(null);
+  const navegacion = useNavigationContainerRef();
   const consulta = useRef<AbortController | null>(null);
   const almacenamiento = useRef<Promise<void>>(Promise.resolve());
 
@@ -105,6 +108,7 @@ export function SesionProvider({ children }: { children: ReactNode }) {
 
   const restaurarSesion = useCallback(async () => {
     const actual = ++version.current;
+    perfilPendiente.current = null;
     consulta.current?.abort();
     const control = new AbortController();
     consulta.current = control;
@@ -132,7 +136,12 @@ export function SesionProvider({ children }: { children: ReactNode }) {
         preferencia === "true" || cuentas.includes(usuarioId ?? "");
       setBiometriaActiva(activa);
       if (activa && !biometriaVerificada.current) {
-        await verificarBiometria();
+        try {
+          await verificarBiometria();
+        } catch (error) {
+          if (actual === version.current) perfilPendiente.current = actual;
+          throw error;
+        }
         if (actual !== version.current) return;
         biometriaVerificada.current = true;
       }
@@ -189,9 +198,32 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     void restaurarSesion();
     return () => {
       ++version.current;
+      perfilPendiente.current = null;
       consulta.current?.abort();
     };
   }, [restaurarSesion]);
+
+  useEffect(() => {
+    if (perfilPendiente.current === null) return;
+    function mostrarPerfil() {
+      if (perfilPendiente.current !== version.current) {
+        perfilPendiente.current = null;
+        return;
+      }
+      if (restaurando || !errorRestauracion) return;
+      if (!navegacion.isReady()) return;
+      // Consumimos la navegación antes de ejecutarla para evitar repeticiones.
+      perfilPendiente.current = null;
+      router.navigate("/(tabs)/perfil");
+    }
+    const quitarReady = navegacion.addListener("ready", mostrarPerfil);
+    const quitarState = navegacion.addListener("state", mostrarPerfil);
+    mostrarPerfil();
+    return () => {
+      quitarReady();
+      quitarState();
+    };
+  }, [errorRestauracion, restaurando, navegacion]);
 
   async function activarBiometria() {
     if (!sesion) return;
@@ -256,6 +288,7 @@ export function SesionProvider({ children }: { children: ReactNode }) {
 
   async function iniciarSesion(nuevaSesion: Sesion) {
     const actual = ++version.current;
+    perfilPendiente.current = null;
     consulta.current?.abort();
     try {
       const activa = ES_WEB
@@ -292,6 +325,7 @@ export function SesionProvider({ children }: { children: ReactNode }) {
   async function cerrarSesion() {
     // Invalida incluso una restauración cuya respuesta ya esté en camino.
     const actual = ++version.current;
+    perfilPendiente.current = null;
     consulta.current?.abort();
     try {
       if (!ES_WEB)

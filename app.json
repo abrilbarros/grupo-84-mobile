@@ -50,10 +50,11 @@
           "locationWhenInUsePermission": "Usamos tu ubicación para mostrarte el mapa de tu ciudad."
         }
       ],
+      "expo-secure-store",
       [
-        "expo-secure-store",
+        "expo-local-authentication",
         {
-          "faceIDPermission": false
+          "faceIDPermission": "Usamos Face ID para verificar tu identidad y proteger el acceso a tu sesión guardada"
         }
       ],
       "expo-sqlite"
