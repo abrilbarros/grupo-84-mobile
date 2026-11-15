@@ -1,29 +1,110 @@
+import { useState } from "react";
+
+import { StyleSheet, Button, Modal } from "react-native";
+
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import {
-  StyleSheet,
-  Button,
-  Modal,
-  Pressable,
-  ScrollView,
-  TextInput,
-  useColorScheme,
-} from "react-native";
-import { useState, useEffect, useRef } from "react";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { obtenerCategorias, obtenerLugares } from "@/servicios/recorrido";
+
 import { useSesion } from "@/contextos/sesion";
-import { Colors } from "@/constants/theme";
+import { FormularioVisita } from "@/components/recorrido/FormularioVisita";
+
+import { LectorQR } from "@/components/recorrido/LectorQR";
+import type { Lugar } from "@/tipos/recorrido";
+
+import * as Location from "expo-location";
+import { Alert } from "react-native";
+
+import { obtenerLugaresCercanos } from "@/servicios/recorrido";
 
 export default function RecorridoScreen() {
   const { sesion } = useSesion();
   const [modalVisible, setModalVisible] = useState(false);
   const [metodoRegistro, setMetodoRegistro] = useState<string | null>(null);
-  const [lugar, setLugar] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [fechaHora, setFechaHora] = useState(new Date().toLocaleString()); // Arranca con la fecha/hora actual por defecto
-  const [notaPersonal, setNotaPersonal] = useState("");
-  const [foto, setFoto] = useState<string | null>(null);
+  const [lugarQR, setLugarQR] = useState<Lugar | null>(null);
+  const [lugarGPS, setLugarGPS] = useState<Lugar | null>(null);
+  const [buscandoGPS, setBuscandoGPS] = useState(false);
+
+  const buscarLugarPorGPS = async () => {
+    try {
+      setBuscandoGPS(true);
+
+      // 1. Solicitar permiso para acceder a la ubicación
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Permiso denegado",
+          "Necesitamos acceder a tu ubicación para encontrar lugares cercanos.",
+        );
+        return;
+      }
+
+      // 2. Obtener ubicación actual del celular
+      const ubicacion = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const { latitude, longitude } = ubicacion.coords;
+
+      // UBICACIÓN SIMULADA PARA LA PRUEBA
+      //const latitude = -32.2192;
+      //const longitude = -58.1318;
+
+      // 3. Consultar lugares dentro de un radio de 50 metros
+      const lugares = await obtenerLugaresCercanos(latitude, longitude, 50);
+
+      // 4. Si no hay lugares cercanos
+      if (lugares.length === 0) {
+        Alert.alert(
+          "Sin lugares cercanos",
+          "No estás cerca de ningún lugar, cargalo a mano.",
+        );
+        return;
+      }
+
+      // 5. Calcular cuál es el lugar más cercano
+      const distanciaEnMetros = (lugar: Lugar) => {
+        if (!lugar.coordenadas) return Infinity;
+
+        const lat1 = latitude * (Math.PI / 180);
+        const lon1 = longitude * (Math.PI / 180);
+        const lat2 = lugar.coordenadas.latitud * (Math.PI / 180);
+        const lon2 = lugar.coordenadas.longitud * (Math.PI / 180);
+
+        const diferenciaLatitud = lat2 - lat1;
+        const diferenciaLongitud = lon2 - lon1;
+
+        const a =
+          Math.sin(diferenciaLatitud / 2) ** 2 +
+          Math.cos(lat1) *
+            Math.cos(lat2) *
+            Math.sin(diferenciaLongitud / 2) ** 2;
+
+        const distancia =
+          6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return distancia;
+      };
+
+      const lugarMasCercano = lugares.reduce((masCercano, lugar) =>
+        distanciaEnMetros(lugar) < distanciaEnMetros(masCercano)
+          ? lugar
+          : masCercano,
+      );
+
+      // 6. Abrir el formulario con el lugar encontrado
+      setLugarGPS(lugarMasCercano);
+      setMetodoRegistro("gps");
+    } catch (error) {
+      console.error("Error al buscar lugares por GPS:", error);
+      Alert.alert(
+        "Error de ubicación",
+        "No pudimos obtener tu ubicación. Intentá nuevamente.",
+      );
+    } finally {
+      setBuscandoGPS(false);
+    }
+  };
 
   // 1. Si no hay sesión, muestra esto
   if (!sesion) {
@@ -36,27 +117,55 @@ export default function RecorridoScreen() {
 
   if (metodoRegistro === "QR") {
     return (
-      <ThemedView style={styles.contenedor}>
-        <ThemedText type="title">Escáner QR</ThemedText>
-        <ThemedText>Acá va a prenderse la cámara para escanear</ThemedText>
-        <Button
-          title="Cancelar y volver"
-          onPress={() => setMetodoRegistro(null)}
-        />
-      </ThemedView>
-    );
-  }
-
-  if (metodoRegistro === "Manual") {
-    return (
-      <FormularioVisita
-        metodo="Manual"
+      <LectorQR
+        onLugarEncontrado={(lugar) => {
+          setLugarQR(lugar);
+          setMetodoRegistro("qr");
+        }}
         onCancelar={() => setMetodoRegistro(null)}
       />
     );
   }
 
-  // 3. Pantalla principal con el botón y el modal con las 3 opciones
+  if (metodoRegistro === "qr" && lugarQR) {
+    return (
+      <FormularioVisita
+        metodo="qr"
+        token={sesion.token}
+        lugarInicial={lugarQR}
+        onCancelar={() => {
+          setLugarQR(null);
+          setMetodoRegistro(null);
+        }}
+      />
+    );
+  }
+
+  if (metodoRegistro === "gps" && lugarGPS) {
+    return (
+      <FormularioVisita
+        metodo="gps"
+        token={sesion.token}
+        lugarInicial={lugarGPS}
+        onCancelar={() => {
+          setLugarGPS(null);
+          setMetodoRegistro(null);
+        }}
+      />
+    );
+  }
+
+  if (metodoRegistro === "manual") {
+    return (
+      <FormularioVisita
+        metodo="manual"
+        token={sesion.token}
+        onCancelar={() => setMetodoRegistro(null)}
+      />
+    );
+  }
+
+  // Pantalla principal con el botón y el modal con las 3 opciones
   return (
     <ThemedView style={styles.contenedor}>
       <ThemedText>Aún no tenés visitas registradas</ThemedText>
@@ -75,17 +184,18 @@ export default function RecorridoScreen() {
           />
 
           <Button
-            title="Usar GPS"
+            title={buscandoGPS ? "Buscando ubicación..." : "Usar GPS"}
+            disabled={buscandoGPS}
             onPress={() => {
-              setMetodoRegistro("GPS");
               setModalVisible(false);
+              buscarLugarPorGPS();
             }}
           />
 
           <Button
             title="Carga Manual"
             onPress={() => {
-              setMetodoRegistro("Manual");
+              setMetodoRegistro("manual");
               setModalVisible(false);
             }}
           />
@@ -97,281 +207,10 @@ export default function RecorridoScreen() {
   );
 }
 
-type Categoria = {
-  id: string;
-  nombre: string;
-};
-
-type Lugar = {
-  id: string;
-  nombre: string;
-  descripcion: string;
-  categoriaId: string;
-};
-
-function FormularioVisita({
-  metodo,
-  onCancelar,
-}: {
-  metodo: string;
-  onCancelar: () => void;
-}) {
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [categoriaSeleccionada, setCategoriaSeleccionada] =
-    useState<Categoria | null>(null);
-  const [modalCategoriaVisible, setModalCategoriaVisible] = useState(false);
-  const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [lugarSeleccionado, setLugarSeleccionado] = useState<Lugar | null>(
-    null,
-  );
-  const [modalLugarVisible, setModalLugarVisible] = useState(false);
-  const [fechaHora, setFechaHora] = useState(new Date());
-  const [nota, setNota] = useState("");
-  const theme = useColorScheme() === "dark" ? Colors.dark : Colors.light;
-  const [fotoUri, setFotoUri] = useState<string | null>(null);
-  const [permisoCamara, solicitarPermisoCamara] = useCameraPermissions();
-  const [camaraVisible, setCamaraVisible] = useState(false);
-
-  //CATEGORIAS
-  useEffect(() => {
-    async function cargarCategorias() {
-      try {
-        const datos = await obtenerCategorias();
-        setCategorias(datos);
-      } catch (error) {
-        console.error("Error al cargar las categorías:", error);
-      }
-    }
-
-    cargarCategorias();
-  }, []);
-
-  //LUGARES
-  useEffect(() => {
-    async function cargarLugares() {
-      if (!categoriaSeleccionada) return;
-
-      try {
-        const datos = await obtenerLugares(categoriaSeleccionada.id);
-        setLugares(datos);
-      } catch (error) {
-        console.error("Error al cargar los lugares:", error);
-      }
-    }
-
-    cargarLugares();
-  }, [categoriaSeleccionada]);
-
-  // Camara
-  const camaraRef = useRef<CameraView>(null);
-
-  async function abrirCamara() {
-    if (!permisoCamara?.granted) {
-      const permiso = await solicitarPermisoCamara();
-
-      if (!permiso.granted) return;
-    }
-
-    setCamaraVisible(true);
-  }
-
-  async function sacarFotografia() {
-    const foto = await camaraRef.current?.takePictureAsync();
-
-    if (foto) {
-      setFotoUri(foto.uri);
-      setCamaraVisible(false);
-    }
-  }
-
-  return (
-    <ScrollView>
-      <ThemedView style={styles.contenedor}>
-        <ThemedText type="title">Registrar Visita</ThemedText>
-
-        {/* Campo categoria */}
-        <Pressable
-          style={styles.input}
-          onPress={() => setModalCategoriaVisible(true)}
-        >
-          <ThemedText>
-            {categoriaSeleccionada
-              ? categoriaSeleccionada.nombre
-              : "Seleccione una categoría"}
-          </ThemedText>
-        </Pressable>
-
-        <Modal
-          visible={modalCategoriaVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setModalCategoriaVisible(false)}
-        >
-          <ThemedView style={styles.modalFondo}>
-            <ThemedView style={styles.modalContenido}>
-              <ThemedText type="subtitle">Seleccione una categoría</ThemedText>
-
-              {categorias.map((categoria) => (
-                <Pressable
-                  key={categoria.id}
-                  onPress={() => {
-                    setCategoriaSeleccionada(categoria);
-                    setLugarSeleccionado(null);
-                    setLugares([]);
-                    setModalCategoriaVisible(false);
-                  }}
-                >
-                  <ThemedText>{categoria.nombre}</ThemedText>
-                </Pressable>
-              ))}
-
-              <Button
-                title="Cerrar"
-                onPress={() => setModalCategoriaVisible(false)}
-              />
-            </ThemedView>
-          </ThemedView>
-        </Modal>
-
-        {/* Campo lugar */}
-        <Pressable
-          style={styles.input}
-          onPress={() => setModalLugarVisible(true)}
-          disabled={!categoriaSeleccionada}
-        >
-          <ThemedText>
-            {lugarSeleccionado
-              ? lugarSeleccionado.nombre
-              : "Seleccione un lugar"}
-          </ThemedText>
-        </Pressable>
-
-        <Modal
-          visible={modalLugarVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setModalLugarVisible(false)}
-        >
-          <ThemedView style={styles.modalFondo}>
-            <ThemedView style={styles.modalContenido}>
-              <ThemedText type="subtitle">Seleccione un lugar</ThemedText>
-
-              {lugares.map((lugar) => (
-                <Pressable
-                  key={lugar.id}
-                  onPress={() => {
-                    setLugarSeleccionado(lugar);
-                    setModalLugarVisible(false);
-                  }}
-                >
-                  <ThemedText>{lugar.nombre}</ThemedText>
-                </Pressable>
-              ))}
-
-              <Button
-                title="Cerrar"
-                onPress={() => setModalLugarVisible(false)}
-              />
-            </ThemedView>
-          </ThemedView>
-        </Modal>
-
-        {/* campo descripcion */}
-        <ThemedView style={styles.input}>
-          <ThemedText>
-            {lugarSeleccionado
-              ? lugarSeleccionado.descripcion
-              : "Descripción del lugar"}
-          </ThemedText>
-        </ThemedView>
-
-        {/* Campo fecha y hora */}
-        <ThemedView style={styles.input}>
-          <ThemedText>{fechaHora.toLocaleString("es-AR")}</ThemedText>
-        </ThemedView>
-
-        {/* Campo nota */}
-        <TextInput
-          style={[
-            styles.input,
-            {
-              color: theme.text,
-            },
-          ]}
-          placeholder="Dejá una nota (opcional)"
-          placeholderTextColor={theme.textSecondary}
-          value={nota}
-          onChangeText={setNota}
-          multiline
-        />
-
-        {/* Campo fotografía */}
-        <ThemedView style={styles.input}>
-          <ThemedText>
-            {fotoUri
-              ? fotoUri.split("/").pop()
-              : "No se tomo ninguna fotografía"}
-          </ThemedText>
-        </ThemedView>
-
-        <Button title="Sacar fotografía" onPress={abrirCamara} />
-
-        <Modal
-          visible={camaraVisible}
-          animationType="slide"
-          onRequestClose={() => setCamaraVisible(false)}
-        >
-          <ThemedView style={{ flex: 1 }}>
-            <CameraView ref={camaraRef} style={{ flex: 1 }} facing="back" />
-
-            <Button title="Tomar fotografía" onPress={sacarFotografia} />
-
-            <Button
-              title="Cerrar cámara"
-              onPress={() => setCamaraVisible(false)}
-            />
-          </ThemedView>
-        </Modal>
-
-        <Button title="Cancelar y volver" onPress={onCancelar} />
-      </ThemedView>
-    </ScrollView>
-  );
-}
-
 const styles = StyleSheet.create({
-  contenedor: { flex: 1, alignItems: "center", justifyContent: "center" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    width: "80%",
-    borderRadius: 8,
-    marginVertical: 10,
-    color: "#000",
-  },
-  campoProvisorio: {
-    borderWidth: 1,
-    borderColor: "#0a7ea4",
-    borderStyle: "dashed",
-    padding: 12,
-    width: "80%",
-    borderRadius: 8,
-    marginVertical: 10,
-    textAlign: "center",
-  },
-  modalFondo: {
+  contenedor: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.89)",
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-  },
-
-  modalContenido: {
-    width: "85%",
-    padding: 20,
-    borderRadius: 12,
-    gap: 15,
-    alignItems: "center",
   },
 });
