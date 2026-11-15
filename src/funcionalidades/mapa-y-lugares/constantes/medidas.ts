@@ -1,4 +1,5 @@
 export const ALTURA_MINIMA_DE_TOQUE = 48;
+export const ALTURA_DE_LA_GALERIA_DE_IMAGENES = 240;
 
 export const RADIO_DE_BORDE = {
   pequeno: 8,
