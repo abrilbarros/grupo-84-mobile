@@ -71,17 +71,24 @@ export async function obtenerCategoriasLocales(): Promise<Categoria[]> {
 // Guarda los lugares recibidos del backend.
 export async function guardarLugaresLocales(
   lugares: Lugar[],
+  reemplazar = true,
   ): Promise<void> {
   const db = await obtenerDB();
 
   await db.withExclusiveTransactionAsync(async () => {
-    await db.runAsync("DELETE FROM lugares");
+    if (reemplazar) await db.runAsync("DELETE FROM lugares");
 
     for (const lugar of lugares) {
       await db.runAsync(
         `INSERT INTO lugares (
           id, nombre, descripcion, categoriaId, latitud, longitud
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          nombre = excluded.nombre,
+          descripcion = excluded.descripcion,
+          categoriaId = excluded.categoriaId,
+          latitud = excluded.latitud,
+          longitud = excluded.longitud`,
         lugar.id,
         lugar.nombre,
         lugar.descripcion,

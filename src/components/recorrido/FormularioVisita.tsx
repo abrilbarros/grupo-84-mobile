@@ -59,6 +59,14 @@ export function FormularioVisita({
 
         const datos = await obtenerCategorias();
         setCategorias(datos);
+
+        // Precarga el catálogo completo para que el selector por categoría
+        // pueda funcionar sin conexión, incluso antes de elegir una categoría.
+        try {
+          await obtenerLugares();
+        } catch (error) {
+          console.error("Error al precargar los lugares para uso sin conexión:", error);
+        }
       } catch (error) {
         console.error("Error al cargar las categorías:", error);
         setCategorias([]);

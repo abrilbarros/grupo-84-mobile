@@ -115,10 +115,7 @@ export async function obtenerLugares(categoriaId?: string) {
     const respuesta = await solicitar<any>(`/lugares?${parametros.toString()}`);
 
     const lugares = respuesta.datos || respuesta;
-
-    if (!categoriaId) {
-      await guardarLugaresLocales(lugares);
-    }
+    await guardarLugaresLocales(lugares, !categoriaId);
 
     return lugares;
   } catch (error) {
